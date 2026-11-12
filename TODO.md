@@ -4,6 +4,7 @@
 
 - [x] Supabase 專案、跑完 `20261112000000_init.sql`、關閉註冊、建好兩個帳號和 profiles
 - [x] GitHub repo `ron221/neko-nezumi-calendar-repo`，Vercel 部署好、填好 4 個環境變數（2026-11-12 從 Vercel 自動複製的 `neko-nezumi-calendar-repo21` 改連到這個 repo）
+- [ ] 鼠的班表自動同步：執行 `20261112100000_shift_import.sql`、在 Vercel 填 `HR_USERNAME`、`HR_PASSWORD`、`SUPABASE_SECRET_KEY`、`CRON_SECRET`，按「現在同步」確認（2026-11-12）
 - [ ] 確認自動部署正常後，刪掉 GitHub 上用不到的 `neko-nezumi-calendar-repo21`
 - [x] 兩人登入、新增行程、即時同步實測 OK
 - [ ] 想要的話把網址改成 `neko-nezumi-calendar.vercel.app`（Vercel → Settings → Domains），Supabase 的 Site URL 也要跟著改

@@ -27,6 +27,9 @@ export async function proxy(request: NextRequest) {
   const signedIn = Boolean(data?.claims);
   const isLogin = request.nextUrl.pathname === "/login";
 
+  // API 自己檢查權限（排程呼叫時沒有登入的 cookie），不要轉到登入頁
+  if (request.nextUrl.pathname.startsWith("/api/")) return response;
+
   if (!signedIn && !isLogin) return redirectTo(request, "/login", response);
   if (signedIn && isLogin) return redirectTo(request, "/", response);
   return response;

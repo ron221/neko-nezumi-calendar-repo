@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { addDays, addMonths, isSameDay, monthGrid, startOfDay, weekDays } from "@/lib/dates";
 import { useCalendarData } from "@/lib/use-calendar-data";
-import { ROLE_EMOJI, type CalEvent, type Profile } from "@/lib/types";
+import { ROLE_EMOJI, isShift, type CalEvent, type Profile } from "@/lib/types";
 import { tint } from "@/lib/color";
 import { Chevron, Plus } from "./icons";
 import { MonthView } from "./month-view";
@@ -62,7 +62,10 @@ export function CalendarApp() {
   const sorted = useMemo(
     () =>
       [...data.events].sort(
-        (a, b) => Number(b.all_day) - Number(a.all_day) || a.start_at.localeCompare(b.start_at),
+        (a, b) =>
+          Number(isShift(b)) - Number(isShift(a)) || // 班表排最前面
+          Number(b.all_day) - Number(a.all_day) ||
+          a.start_at.localeCompare(b.start_at),
       ),
     [data.events],
   );

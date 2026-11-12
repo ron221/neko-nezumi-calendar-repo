@@ -28,7 +28,12 @@ export type CalEvent = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  source?: string | null; // "tup-shift" = 從鼠的班表自動匯入；自己新增的是 null
+  source_key?: string | null;
 };
+
+export const SHIFT_SOURCE = "tup-shift";
+export const isShift = (e: CalEvent) => e.source === SHIFT_SOURCE;
 
 export type EventDraft = {
   id?: string;

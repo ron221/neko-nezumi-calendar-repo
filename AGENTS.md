@@ -27,6 +27,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 保持登入：`src/proxy.ts` 每次導覽刷新 session，瀏覽器端的 Supabase client 也會自動更新 token；cookie 保存 400 天。
 - 行程資料全部在瀏覽器端讀寫（`src/lib/use-events.ts`），用 Realtime 收對方的改動；最近載入過的行程存在 localStorage，離線也看得到。
 - 沒填 Supabase 環境變數時，首頁是「示範模式」（假資料、存在記憶體），方便在 localhost 看畫面。
+- 鼠的班表：`src/lib/shifts/`。Vercel Cron 每天台灣 06:00（`vercel.json`）呼叫 `/api/shifts/sync`，用 `HR_USERNAME`／`HR_PASSWORD` 登入 hr.tup.j91.me、讀這個月和下個月，存成鼠的行程（`source = 'tup-shift'`、`source_key` = 日期）。只有有變動的才寫入。設定裡的「現在同步」也會呼叫它。
+  - 改了解析就用存下來的班表頁測：`node --experimental-strip-types scripts/test-shifts.mjs <班表.html>`
+  - Claude 不使用班表網站的帳號密碼登入；要實測同步，請使用者在正式站按「現在同步」。
 - 資料庫：`supabase/migrations`。`profiles`（誰是貓誰是鼠、顏色）、`events`（行程）。RLS 只讓 `profiles` 裡的兩個人讀寫。
 
 ### 設計速記

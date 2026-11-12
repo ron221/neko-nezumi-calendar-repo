@@ -267,7 +267,18 @@ function demoEvents(): Record<string, CalEvent> {
     { id: "d5", title: "電影：晚場", start_at: at(5, 20, 40), end_at: at(5, 23), all_day: false, location: "信義威秀", note: null, created_by: "demo-nezumi" },
     { id: "d6", title: "貓貓健身", start_at: at(9, 7), end_at: at(9, 8), all_day: false, location: null, note: null, created_by: "demo-neko" },
   ];
-  return Object.fromEntries(list.map((e) => [e.id, { ...e, created_at: now, updated_at: now }]));
+  // 鼠的班表（示範）
+  const shifts = [1, 2, 8, 9].map((day) => ({
+    id: `s${day}`, title: "上班", start_at: at(day, 10), end_at: at(day, 18), all_day: false,
+    location: "原岩 新店", note: null, created_by: "demo-nezumi", source: "tup-shift", source_key: `d${day}`,
+  }));
+  const offs = [4, 11].map((day) => ({
+    id: `o${day}`, title: "排休", start_at: at(day, 0), end_at: at(day + 1, 0), all_day: true,
+    location: null, note: null, created_by: "demo-nezumi", source: "tup-shift", source_key: `o${day}`,
+  }));
+  return Object.fromEntries(
+    [...list, ...shifts, ...offs].map((e) => [e.id, { ...e, created_at: now, updated_at: now }]),
+  );
 }
 
 function useDemoData(): CalendarData {

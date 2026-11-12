@@ -43,6 +43,8 @@ export function SettingsSheet({ me, demo, onColor, onSignOut, onClose }: {
       </div>
       <p className="mt-2 min-h-5 text-sm text-danger">{error}</p>
 
+      <ShiftSync demo={demo} />
+
       {!demo && (
         <button
           type="button"
@@ -55,5 +57,53 @@ export function SettingsSheet({ me, demo, onColor, onSignOut, onClose }: {
         </button>
       )}
     </Sheet>
+  );
+}
+
+type SyncResponse = { ok: boolean; error?: string; added?: number; updated?: number; removed?: number; unchanged?: number };
+
+/** 鼠的班表：每天早上 6 點自動同步，也可以按「現在同步」 */
+function ShiftSync({ demo }: { demo: boolean }) {
+  const [state, setState] = useState<"idle" | "busy">("idle");
+  const [message, setMessage] = useState("");
+
+  const run = async () => {
+    if (demo) return setMessage("示範模式不能同步");
+    setState("busy");
+    setMessage("");
+    try {
+      const res = await fetch("/api/shifts/sync", { method: "POST" });
+      const r = (await res.json()) as SyncResponse;
+      setMessage(
+        r.ok
+          ? r.added || r.updated || r.removed
+            ? `同步好了：新增 ${r.added}、更新 ${r.updated}、刪除 ${r.removed}`
+            : "同步好了，班表沒有變動"
+          : (r.error ?? "同步失敗"),
+      );
+    } catch {
+      setMessage("沒有網路，等一下再試");
+    }
+    setState("idle");
+  };
+
+  return (
+    <section className="mt-4 rounded-2xl bg-card p-4 shadow-soft">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-round text-[15px]">🐭 鼠的班表</h3>
+          <p className="mt-0.5 text-[12.5px] text-ink-soft">每天早上 6 點自動匯入這個月和下個月</p>
+        </div>
+        <button
+          type="button"
+          onClick={run}
+          disabled={state === "busy"}
+          className="h-9 shrink-0 rounded-full bg-ink px-4 text-[14px] text-paper disabled:opacity-50"
+        >
+          {state === "busy" ? "同步中…" : "現在同步"}
+        </button>
+      </div>
+      {message && <p className="mt-2 text-[13px] text-ink-soft">{message}</p>}
+    </section>
   );
 }

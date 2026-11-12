@@ -1,8 +1,8 @@
-/** 把 #RRGGBB 和白色（紙色）混在一起，得到不透明的淡色。比半透明穩定，疊在哪裡都一樣 */
+/** 把 #RRGGBB 和白色（紙色）混在一起，得到不透明的淡色（amount 超過 1 會比原色更深）。比半透明穩定，疊在哪裡都一樣 */
 export function tint(hex: string, amount: number, base = "#fffcf7") {
   const a = parse(hex);
   const b = parse(base);
-  const mix = a.map((v, i) => Math.round(b[i] + (v - b[i]) * amount));
+  const mix = a.map((v, i) => Math.min(255, Math.max(0, Math.round(b[i] + (v - b[i]) * amount))));
   return `rgb(${mix.join(" ")})`;
 }
 

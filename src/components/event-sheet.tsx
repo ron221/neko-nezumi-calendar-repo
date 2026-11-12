@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { WEEKDAYS, addDays, dateKey, fromKeys, timeKey } from "@/lib/dates";
-import { ROLE_EMOJI, type CalEvent, type EventDraft } from "@/lib/types";
+import { ROLE_EMOJI, isShift, type CalEvent, type EventDraft } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
 import { Sheet } from "./sheet";
 
@@ -204,6 +204,11 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
           {error}
         </p>
 
+        {event && isShift(event) && (
+          <p className="rounded-xl bg-[#e9eff7] px-3 py-2 text-[13px] leading-relaxed text-[#3d5675]">
+            這是從鼠的班表自動匯入的，每天早上 6 點會重新同步。在這裡改的內容，下次同步時會被班表蓋掉；要改班請到班表網站。
+          </p>
+        )}
         {event && (
           <>
             <p className="text-center text-xs text-ink-soft">

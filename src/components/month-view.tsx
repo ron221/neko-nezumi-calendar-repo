@@ -1,6 +1,6 @@
 import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import { tint } from "@/lib/color";
-import type { CalEvent, Profile } from "@/lib/types";
+import { isShift, type CalEvent, type Profile } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
 import { EventRow, FALLBACK_COLOR, Legend } from "./event-bits";
 
@@ -65,9 +65,11 @@ export function MonthView({ days, month, today, selected, events, profiles, prof
                         key={e.id}
                         className="block truncate rounded-[5px] px-[3px] text-left text-[9.5px] leading-[13px]"
                         style={
-                          e.all_day
-                            ? { backgroundColor: color, color: "#fff" }
-                            : { backgroundColor: tint(color, 0.2), color: "#4a3d33" }
+                          isShift(e) && e.all_day
+                            ? { boxShadow: `inset 0 0 0 1px ${tint(color, 0.55)}`, color: tint(color, 1.25, "#ffffff") } // 排休：只有外框
+                            : e.all_day
+                              ? { backgroundColor: color, color: "#fff" }
+                              : { backgroundColor: tint(color, 0.2), color: "#4a3d33" }
                         }
                       >
                         {e.title}
