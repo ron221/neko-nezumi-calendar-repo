@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { COLOR_CHOICES, ROLE_EMOJI, type Profile } from "@/lib/types";
+import { tint } from "@/lib/color";
 import { Sheet } from "./sheet";
 
 export function SettingsSheet({ me, demo, onColor, onSignOut, onClose }: {
@@ -18,12 +19,12 @@ export function SettingsSheet({ me, demo, onColor, onSignOut, onClose }: {
     <Sheet title="設定" onClose={onClose}>
       <div className="flex flex-col items-center gap-2 pt-3">
         <span
-          className="grid size-20 place-items-center rounded-full text-5xl ring-4"
-          style={{ backgroundColor: `${me.color}33`, ["--tw-ring-color" as string]: me.color }}
+          className="grid size-20 place-items-center rounded-full text-5xl shadow-soft ring-4 ring-card"
+          style={{ backgroundColor: tint(me.color, 0.3) }}
         >
           {ROLE_EMOJI[me.role]}
         </span>
-        <p className="text-lg font-bold">{me.name}</p>
+        <p className="font-round text-[20px]">{me.name}</p>
       </div>
 
       <h3 className="mt-6 mb-2 text-sm font-medium text-ink-soft">我的顏色（我建立的行程用這個顏色）</h3>
@@ -46,8 +47,8 @@ export function SettingsSheet({ me, demo, onColor, onSignOut, onClose }: {
         <button
           type="button"
           onClick={() => (confirmOut ? onSignOut() : setConfirmOut(true))}
-          className={`mt-4 h-12 w-full rounded-xl text-[15px] font-medium ring-1 ${
-            confirmOut ? "bg-danger text-white ring-danger" : "bg-card text-danger ring-line"
+          className={`mt-4 h-12 w-full rounded-2xl text-[15px] font-medium ${
+            confirmOut ? "bg-danger text-white" : "bg-card text-danger shadow-soft"
           }`}
         >
           {confirmOut ? "確定要登出嗎？再按一次" : "登出"}

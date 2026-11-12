@@ -2,14 +2,18 @@
 
 /* 只做淺色（第一版）。主題色和 manifest、viewport 的 themeColor 一樣 */
 @theme {
-  --color-paper: #fbf7f0;
-  --color-card: #ffffff;
-  --color-ink: #2f2a26;
-  --color-ink-soft: #8a8178;
-  --color-line: #ebe3d8;
-  --color-accent: #e07a3f;
-  --color-danger: #d64545;
+  --color-paper: #f6efe4;
+  --color-card: #fffcf7;
+  --color-ink: #3b312a;
+  --color-ink-soft: #978a7d;
+  --color-line: #e8dccd;
+  --color-accent: #d9774b;
+  --color-accent-soft: #f7e3d6;
+  --color-danger: #c94a3f;
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-round: var(--font-huninn), -apple-system, "PingFang TC", sans-serif;
+  --font-num: var(--font-fraunces), Georgia, serif;
+  --shadow-soft: 0 1px 2px rgb(59 49 42 / 0.04), 0 6px 20px -8px rgb(59 49 42 / 0.12);
 
   --animate-shake: shake 0.35s ease-in-out;
   --animate-sheet: sheet 0.22s ease-out;
@@ -34,9 +38,14 @@
   color-scheme: light;
 }
 
+html {
+  background: var(--color-paper);
+}
+
+/* body 不設背景，下面 body::before 的暈染才不會被蓋住 */
 html,
 body {
-  background: var(--color-paper);
+
   color: var(--color-ink);
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
@@ -61,16 +70,22 @@ select {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* 行程面板裡的日期、時間 */
-.field {
-  min-width: 0;
-  height: 36px;
-  border-radius: 8px;
-  background: var(--color-paper);
-  padding: 0 8px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+/* Fraunces 數字：柔和、大字時用展示用的字形 */
+.num {
+  font-family: var(--font-num);
+  font-variation-settings: "SOFT" 100;
+  font-variant-numeric: lining-nums tabular-nums;
 }
-.field::-webkit-date-and-time-value {
-  text-align: center;
+
+/* 很淡的兩團暈染（右上橘＝貓、左下藍＝鼠）。
+   用固定的圖層而不是 background-attachment: fixed：iPhone Safari 不支援那個，捲動時會整片重畫跳動 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(24rem 22rem at 120% 58%, rgb(242 153 74 / 0.10), transparent 65%),
+    radial-gradient(36rem 26rem at -20% 108%, rgb(108 155 210 / 0.10), transparent 62%);
 }

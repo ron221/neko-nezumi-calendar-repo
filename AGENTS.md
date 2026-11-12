@@ -28,3 +28,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 行程資料全部在瀏覽器端讀寫（`src/lib/use-events.ts`），用 Realtime 收對方的改動；最近載入過的行程存在 localStorage，離線也看得到。
 - 沒填 Supabase 環境變數時，首頁是「示範模式」（假資料、存在記憶體），方便在 localhost 看畫面。
 - 資料庫：`supabase/migrations`。`profiles`（誰是貓誰是鼠、顏色）、`events`（行程）。RLS 只讓 `profiles` 裡的兩個人讀寫。
+
+### 設計速記
+
+- 手帳風：紙色底（`--color-paper`），白色卡片配柔和陰影（`shadow-soft`），盡量不用框線。
+- 字型：標題、按鈕用粉圓體 `font-round`（Huninn）；大數字（月份、日期、時間）用 `.num`（Fraunces）；內文用系統字（蘋方）。
+- 兩人的顏色用 `tint()`（`src/lib/color.ts`）調成不透明的淡色當底，不用半透明。
+- 日期、時間欄位用 `PickerField`：自己畫字，透明的原生欄位蓋在上面。

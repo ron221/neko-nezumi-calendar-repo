@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ROLE_EMOJI, ROLE_NAME, type Role } from "@/lib/types";
+import { DEFAULT_COLOR, ROLE_EMOJI, ROLE_NAME, type Role } from "@/lib/types";
+import { tint } from "@/lib/color";
 import { signIn } from "./actions";
 
 const PIN_LENGTH = 6;
@@ -68,20 +69,20 @@ export function LoginScreen() {
 
   return (
     <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col items-center px-6">
-      <div className="flex flex-1 flex-col items-center justify-center pt-10 pb-4">
-        <h1 className="text-2xl font-bold tracking-wide">貓鼠日曆</h1>
-        <p className="mt-2 text-sm text-ink-soft">{role ? `${ROLE_NAME[role]}，輸入密碼` : "誰要登入？"}</p>
+      <div className="flex flex-1 flex-col items-center justify-center pt-8 pb-4">
+        <p className="text-[10.5px] font-medium tracking-[0.3em] text-ink-soft uppercase">Neko · Nezumi</p>
+        <h1 className="mt-2 font-round text-[32px] leading-none">貓鼠日曆</h1>
+        <p className="mt-3 font-round text-[15px] text-ink-soft">{role ? `${ROLE_NAME[role]}，輸入密碼` : "誰要登入？"}</p>
 
         {role ? (
           <>
-            <div className="mt-8 grid size-24 place-items-center rounded-full bg-card text-6xl shadow-sm ring-1 ring-line">
-              {ROLE_EMOJI[role]}
-            </div>
-            <div key={shake} className={`mt-8 flex gap-3 ${shake ? "animate-shake" : ""}`} aria-label={`已輸入 ${pin.length} 位`}>
+            <Avatar role={role} size={92} className="mt-7" />
+            <div key={shake} className={`mt-7 flex gap-3.5 ${shake ? "animate-shake" : ""}`} aria-label={`已輸入 ${pin.length} 位`}>
               {Array.from({ length: PIN_LENGTH }, (_, i) => (
                 <span
                   key={i}
-                  className={`size-3.5 rounded-full border-2 border-ink ${i < pin.length ? "bg-ink" : "bg-transparent"}`}
+                  className="size-3 rounded-full"
+                  style={{ backgroundColor: i < pin.length ? DEFAULT_COLOR[role] : "var(--color-line)" }}
                 />
               ))}
             </div>
@@ -90,7 +91,7 @@ export function LoginScreen() {
             </p>
           </>
         ) : (
-          <div className="mt-10 flex gap-8">
+          <div className="mt-10 flex gap-7">
             {(["neko", "nezumi"] as const).map((r) => (
               <button
                 key={r}
@@ -98,10 +99,8 @@ export function LoginScreen() {
                 onClick={() => setRole(r)}
                 className="flex flex-col items-center gap-3 active:opacity-70"
               >
-                <span className="grid size-28 place-items-center rounded-full bg-card text-7xl shadow-sm ring-1 ring-line">
-                  {ROLE_EMOJI[r]}
-                </span>
-                <span className="text-lg font-medium">{ROLE_NAME[r]}</span>
+                <Avatar role={r} size={116} />
+                <span className="font-round text-[18px]">{ROLE_NAME[r]}</span>
               </button>
             ))}
           </div>
@@ -109,7 +108,7 @@ export function LoginScreen() {
       </div>
 
       {/* 數字鍵盤：固定佔位，選頭像前後版面高度不變 */}
-      <div className={`grid w-full max-w-72 grid-cols-3 gap-4 pb-8 ${role ? "" : "invisible"}`}>
+      <div className={`grid grid-cols-3 gap-x-6 gap-y-3.5 pb-8 ${role ? "" : "invisible"}`}>
         {KEYS.map((k) => (
           <button
             key={k}
@@ -118,8 +117,8 @@ export function LoginScreen() {
             onClick={() => press(k)}
             className={
               k === "back" || k === "del"
-                ? "h-16 rounded-full text-base text-ink-soft active:bg-line/60"
-                : "h-16 rounded-full bg-card text-2xl font-medium shadow-sm ring-1 ring-line active:bg-line"
+                ? "grid size-[70px] place-items-center rounded-full font-round text-[15px] text-ink-soft active:bg-line/60"
+                : "num grid size-[70px] place-items-center rounded-full bg-card text-[28px] shadow-soft active:bg-line"
             }
           >
             {k === "back" ? "換人" : k === "del" ? "⌫" : k}
@@ -127,5 +126,17 @@ export function LoginScreen() {
         ))}
       </div>
     </main>
+  );
+}
+
+/** 頭像：淡淡的自己顏色當底，外面一圈白 */
+function Avatar({ role, size, className = "" }: { role: Role; size: number; className?: string }) {
+  return (
+    <span
+      className={`grid place-items-center rounded-full shadow-soft ring-4 ring-card ${className}`}
+      style={{ width: size, height: size, fontSize: size * 0.58, backgroundColor: tint(DEFAULT_COLOR[role], 0.3) }}
+    >
+      {ROLE_EMOJI[role]}
+    </span>
   );
 }

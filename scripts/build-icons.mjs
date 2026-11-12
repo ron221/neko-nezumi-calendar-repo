@@ -5,7 +5,7 @@ import { mkdir } from "node:fs/promises";
 
 const svg = (size) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#fbf7f0"/>
+  <rect width="512" height="512" fill="#f6efe4"/>
   <rect x="96" y="116" width="320" height="300" rx="44" fill="#ffffff" stroke="#ebe3d8" stroke-width="8"/>
   <path d="M96 160a44 44 0 0 1 44-44h232a44 44 0 0 1 44 44v40H96z" fill="#e07a3f"/>
   <rect x="170" y="86" width="22" height="64" rx="11" fill="#2f2a26"/>

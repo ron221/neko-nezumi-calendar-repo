@@ -1,16 +1,18 @@
-import { WEEKDAYS, formatDay, isSameDay, overlapsDay } from "@/lib/dates";
-import type { CalEvent } from "@/lib/types";
+import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
+import { tint } from "@/lib/color";
+import type { CalEvent, Profile } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
-import { EventRow, FALLBACK_COLOR } from "./event-bits";
+import { EventRow, FALLBACK_COLOR, Legend } from "./event-bits";
 
-const MAX_CHIPS = 3;
+const MAX_CHIPS = 2;
 
-export function MonthView({ days, month, today, selected, events, profileOf, onSelect, onOpen }: {
+export function MonthView({ days, month, today, selected, events, profiles, profileOf, onSelect, onOpen }: {
   days: Date[];
   month: number;
   today: Date;
   selected: Date;
   events: CalEvent[];
+  profiles: Profile[];
   profileOf: ProfileLookup;
   onSelect: (d: Date) => void;
   onOpen: (e: CalEvent | "new") => void;
@@ -21,75 +23,90 @@ export function MonthView({ days, month, today, selected, events, profileOf, onS
 
   return (
     <>
-      <div className="grid grid-cols-7 pb-1 text-center text-xs text-ink-soft">
-        {WEEKDAYS.map((w, i) => (
-          <span key={w} className={i === 0 || i === 6 ? "text-accent/80" : ""}>
-            {w}
-          </span>
-        ))}
-      </div>
+      <div className="rounded-[28px] bg-card px-1.5 pt-2.5 pb-1.5 shadow-soft">
+        <div className="grid grid-cols-7 pb-1.5 text-center font-round text-[12px]">
+          {WEEKDAYS.map((w, i) => (
+            <span key={w} className={i === 0 || i === 6 ? "text-accent" : "text-ink-soft"}>
+              {w}
+            </span>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-7 overflow-hidden rounded-2xl bg-line ring-1 ring-line" style={{ gap: 1 }}>
-        {days.map((d, i) => {
-          const inMonth = d.getMonth() === month;
-          const isToday = isSameDay(d, today);
-          const isSelected = isSameDay(d, selected);
-          const list = byDay[i];
-          return (
-            <button
-              key={d.getTime()}
-              type="button"
-              onClick={() => (isSelected ? onOpen("new") : onSelect(d))}
-              className={`flex h-16 min-w-0 flex-col items-stretch px-0.5 pt-1 text-left ${
-                isSelected ? "bg-[#fff3e6]" : "bg-card"
-              }`}
-            >
-              <span
-                className={`mx-auto grid size-6 place-items-center rounded-full text-[13px] ${
-                  isToday ? "bg-accent font-bold text-white" : inMonth ? "" : "text-ink-soft/50"
-                }`}
+        <div className="grid grid-cols-7">
+          {days.map((d, i) => {
+            const inMonth = d.getMonth() === month;
+            const isToday = isSameDay(d, today);
+            const isSelected = isSameDay(d, selected);
+            const list = byDay[i];
+            const overflow = list.length > MAX_CHIPS;
+            const shown = overflow ? list.slice(0, MAX_CHIPS - 1) : list;
+            return (
+              <button
+                key={d.getTime()}
+                type="button"
+                onClick={() => (isSelected ? onOpen("new") : onSelect(d))}
+                aria-label={`${d.getMonth() + 1}月${d.getDate()}日，${list.length} 個行程`}
+                className={`flex h-16 min-w-0 flex-col items-stretch rounded-2xl px-[3px] pt-1 ${
+                  isSelected && !isToday ? "bg-[#f6eee3]" : ""
+                } ${inMonth ? "" : "opacity-40"}`}
               >
-                {d.getDate()}
-              </span>
-              <span className="mt-0.5 flex min-w-0 flex-col gap-px">
-                {list.slice(0, MAX_CHIPS).map((e) => {
-                  const color = profileOf(e.created_by)?.color ?? FALLBACK_COLOR;
-                  return (
-                    <span
-                      key={e.id}
-                      className={`block truncate rounded-[3px] px-1 text-[10px] leading-[14px] ${inMonth ? "" : "opacity-50"}`}
-                      style={
-                        e.all_day
-                          ? { backgroundColor: color, color: "#fff" }
-                          : { backgroundColor: `${color}2e`, boxShadow: `inset 2px 0 0 ${color}` }
-                      }
-                    >
-                      {e.title}
+                <span
+                  className={`num mx-auto grid size-[26px] place-items-center rounded-full text-[14px] ${
+                    isToday ? "bg-accent font-semibold text-white" : isSelected ? "font-semibold" : ""
+                  }`}
+                >
+                  {d.getDate()}
+                </span>
+                <span className="mt-[3px] flex min-w-0 flex-col gap-px">
+                  {shown.map((e) => {
+                    const color = profileOf(e.created_by)?.color ?? FALLBACK_COLOR;
+                    return (
+                      <span
+                        key={e.id}
+                        className="block truncate rounded-[5px] px-[3px] text-left text-[9.5px] leading-[13px]"
+                        style={
+                          e.all_day
+                            ? { backgroundColor: color, color: "#fff" }
+                            : { backgroundColor: tint(color, 0.2), color: "#4a3d33" }
+                        }
+                      >
+                        {e.title}
+                      </span>
+                    );
+                  })}
+                  {overflow && (
+                    <span className="block rounded-[5px] bg-line/60 text-center text-[9.5px] leading-[13px] text-ink-soft">
+                      +{list.length - shown.length}
                     </span>
-                  );
-                })}
-                {list.length > MAX_CHIPS && (
-                  <span className="px-1 text-[10px] leading-[12px] text-ink-soft">+{list.length - MAX_CHIPS}</span>
-                )}
-              </span>
-            </button>
-          );
-        })}
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <section className="mt-4 px-2">
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-base font-bold">{formatDay(selected)}</h2>
-          <button type="button" onClick={() => onOpen("new")} className="text-sm font-medium text-accent">
-            ＋ 新增
-          </button>
+      <div className="mt-3">
+        <Legend profiles={profiles} />
+      </div>
+
+      <section className="mt-6 px-1">
+        <div className="mb-3 flex items-end gap-2.5 px-1">
+          <span className="num text-[34px] leading-[0.8] font-medium">{selected.getDate()}</span>
+          <span className="flex-1 pb-px font-round text-[15px] leading-none text-ink-soft">
+            {selected.getMonth() + 1}月・週{WEEKDAYS[selected.getDay()]}
+          </span>
         </div>
         {selectedEvents.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-sm text-ink-soft">
-            這天沒有行程
-          </p>
+          <button
+            type="button"
+            onClick={() => onOpen("new")}
+            className="w-full rounded-2xl border-[1.5px] border-dashed border-line px-3 py-5 text-center font-round text-[14px] text-ink-soft active:bg-card/60"
+          >
+            這天還沒有安排，點這裡新增
+          </button>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {selectedEvents.map((e) => (
               <EventRow key={e.id} event={e} day={selected} profileOf={profileOf} onOpen={onOpen} />
             ))}
