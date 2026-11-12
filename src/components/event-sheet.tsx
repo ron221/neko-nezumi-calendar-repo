@@ -4,6 +4,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { WEEKDAYS, addDays, dateKey, fromKeys, timeKey } from "@/lib/dates";
 import { ROLE_EMOJI, isShift, type CalEvent, type EventDraft } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
+import type { Occurrence } from "@/lib/recurrence";
 import { Sheet } from "./sheet";
 
 type Form = {
@@ -15,6 +16,8 @@ type Form = {
   endTime: string;
   location: string;
   note: string;
+  repeat: boolean;
+  repeatUntil: string; // "" = 一直重複
 };
 
 function initialForm(event: CalEvent | null, defaultDay: Date): Form {
@@ -31,6 +34,8 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
       endTime: event.all_day ? "10:00" : timeKey(e),
       location: event.location ?? "",
       note: event.note ?? "",
+      repeat: event.repeat === "weekly",
+      repeatUntil: event.repeat_until ?? "",
     };
   }
   // 新的行程：選的那天、下一個整點開始、一小時
@@ -45,17 +50,24 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
     endTime: hour === 23 ? "23:59" : `${String(hour + 1).padStart(2, "0")}:00`,
     location: "",
     note: "",
+    repeat: false,
+    repeatUntil: "",
   };
 }
 
-export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onClose }: {
-  event: CalEvent | null;
+export function EventSheet({ event: picked, series, defaultDay, profileOf, onSave, onDelete, onSkip, onClose }: {
+  event: Occurrence | null;
+  series?: CalEvent; // 點的是每週重複的其中一次時，它的本體
   defaultDay: Date;
   profileOf: ProfileLookup;
   onSave: (draft: EventDraft) => Promise<string | null>;
   onDelete: (id: string) => Promise<string | null>;
+  onSkip: (id: string, date: string) => Promise<string | null>;
   onClose: () => void;
 }) {
+  // 每週重複的行程：改的、刪的都是整個系列（本體），「只刪這一次」另外處理
+  const event = series ?? picked;
+  const once = picked?.occurrenceDate;
   const [form, setForm] = useState(() => initialForm(event, defaultDay));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -87,6 +99,7 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
       end = fromKeys(form.endDate, form.endTime);
     }
     if (end < start) return "結束不能比開始早";
+    if (form.repeat && form.repeatUntil && form.repeatUntil < form.startDate) return "重複的最後一天不能比開始早";
     return {
       id: event?.id,
       title,
@@ -95,6 +108,8 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
       end_at: end.toISOString(),
       location: form.location.trim() || null,
       note: form.note.trim() || null,
+      repeat: form.repeat ? "weekly" : null,
+      repeat_until: form.repeat && form.repeatUntil ? form.repeatUntil : null,
     };
   };
 
@@ -113,6 +128,15 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
     if (!confirmDelete) return setConfirmDelete(true);
     setBusy(true);
     const err = await onDelete(event.id);
+    setBusy(false);
+    if (err) setError(err);
+    else onClose();
+  };
+
+  const skip = async () => {
+    if (!event || !once) return;
+    setBusy(true);
+    const err = await onSkip(event.id, once);
     setBusy(false);
     if (err) setError(err);
     else onClose();
@@ -182,6 +206,26 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
               <PickerField type="time" value={form.endTime} display={form.endTime} onChange={(v) => set("endTime", v)} className="w-[76px]" />
             )}
           </Row>
+          <label className="flex h-[52px] items-center justify-between border-t border-line/70 px-3.5">
+            <span>每週重複</span>
+            <Switch checked={form.repeat} onChange={(v) => set("repeat", v)} />
+          </label>
+          {form.repeat && (
+            <Row label="直到">
+              {form.repeatUntil && (
+                <button type="button" onClick={() => set("repeatUntil", "")} className="h-9 px-1 text-[13px] text-ink-soft">
+                  清除
+                </button>
+              )}
+              <PickerField
+                type="date"
+                value={form.repeatUntil || form.startDate}
+                display={form.repeatUntil ? shortDate(form.repeatUntil) : "一直重複"}
+                onChange={(v) => set("repeatUntil", v)}
+                className="w-[150px]"
+              />
+            </Row>
+          )}
         </div>
 
         <input
@@ -209,12 +253,27 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
             這是從鼠的班表自動匯入的，每天早上 6 點會重新同步。在這裡改的內容，下次同步時會被班表蓋掉；要改班請到班表網站。
           </p>
         )}
+        {once && (
+          <p className="rounded-xl bg-accent-soft/70 px-3 py-2 text-[13px] leading-relaxed text-[#8a4a2b]">
+            這是每週{WEEKDAYS[new Date(event!.start_at).getDay()]}重複的行程。在這裡改的會套用到每一週；只有某一週不去的話，按下面的「只刪這一次」。
+          </p>
+        )}
         {event && (
           <>
             <p className="text-center text-xs text-ink-soft">
               {owner ? `${ROLE_EMOJI[owner.role]} ${owner.name}建立的` : ""}
               ・最後修改 {new Date(event.updated_at).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
             </p>
+            {once && (
+              <button
+                type="button"
+                onClick={skip}
+                disabled={busy}
+                className="h-12 rounded-2xl bg-card text-[15px] font-medium text-danger shadow-soft"
+              >
+                只刪 {Number(once.slice(5, 7))}/{Number(once.slice(8, 10))} 這一次
+              </button>
+            )}
             <button
               type="button"
               onClick={remove}
@@ -223,7 +282,7 @@ export function EventSheet({ event, defaultDay, profileOf, onSave, onDelete, onC
                 confirmDelete ? "bg-danger text-white" : "bg-card text-danger shadow-soft"
               }`}
             >
-              {confirmDelete ? "確定要刪除嗎？再按一次" : "刪除行程"}
+              {confirmDelete ? "確定要刪除嗎？再按一次" : once ? "刪除每一週" : "刪除行程"}
             </button>
           </>
         )}

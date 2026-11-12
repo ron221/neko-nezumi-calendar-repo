@@ -30,6 +30,9 @@ export type CalEvent = {
   updated_at: string;
   source?: string | null; // "tup-shift" = 從鼠的班表自動匯入；自己新增的是 null
   source_key?: string | null;
+  repeat?: "weekly" | null; // 每週重複
+  repeat_until?: string | null; // "2027-03-31"（含這天），null = 一直重複
+  skip_dates?: string[]; // 「只刪這一次」跳過的日期
 };
 
 export const SHIFT_SOURCE = "tup-shift";
@@ -43,4 +46,6 @@ export type EventDraft = {
   all_day: boolean;
   location: string | null;
   note: string | null;
+  repeat: "weekly" | null;
+  repeat_until: string | null;
 };

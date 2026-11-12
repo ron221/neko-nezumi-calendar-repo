@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { addDays, addMonths, isSameDay, monthGrid, startOfDay, weekDays } from "@/lib/dates";
 import { useCalendarData } from "@/lib/use-calendar-data";
-import { ROLE_EMOJI, isShift, type CalEvent, type Profile } from "@/lib/types";
+import { expand, type Occurrence } from "@/lib/recurrence";
+import { ROLE_EMOJI, isShift, type Profile } from "@/lib/types";
 import { tint } from "@/lib/color";
 import { Chevron, Plus } from "./icons";
 import { MonthView } from "./month-view";
@@ -28,7 +29,7 @@ export function CalendarApp() {
   });
   const [today, setToday] = useState(() => startOfDay(new Date()));
   const [selected, setSelected] = useState(today);
-  const [editing, setEditing] = useState<CalEvent | "new" | null>(null);
+  const [editing, setEditing] = useState<Occurrence | "new" | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 過了午夜「今天」要跟著換
@@ -59,15 +60,18 @@ export function CalendarApp() {
 
   const profileOf: ProfileLookup = (id) => data.profiles.find((p) => p.id === id);
 
+  const rangeStart = days[0];
+  const rangeEnd = addDays(days[days.length - 1], 1);
   const sorted = useMemo(
     () =>
-      [...data.events].sort(
+      expand(data.events, rangeStart, rangeEnd).sort(
         (a, b) =>
           Number(isShift(b)) - Number(isShift(a)) || // 班表排最前面
           Number(b.all_day) - Number(a.all_day) ||
           a.start_at.localeCompare(b.start_at),
       ),
-    [data.events],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.events, rangeKey],
   );
 
   const move = (dir: -1 | 1) => {
@@ -200,6 +204,8 @@ export function CalendarApp() {
           profileOf={profileOf}
           onSave={data.save}
           onDelete={data.remove}
+          onSkip={data.skipOnce}
+          series={editing !== "new" && editing.seriesId ? data.events.find((e) => e.id === editing.seriesId) : undefined}
           onClose={() => setEditing(null)}
         />
       )}

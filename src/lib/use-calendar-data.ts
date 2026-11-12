@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { addDays, startOfWeek } from "@/lib/dates";
+import { addDays, dateKey, startOfWeek } from "@/lib/dates";
 import { DEFAULT_COLOR, type CalEvent, type EventDraft, type Profile } from "@/lib/types";
 
 // 最近載入過的行程和兩人的資料存在手機上（localStorage），離線打開也看得到。
@@ -26,6 +26,7 @@ export type CalendarData = {
   setRange: (range: Range) => void;
   save: (draft: EventDraft) => Promise<string | null>; // 回傳錯誤訊息
   remove: (id: string) => Promise<string | null>;
+  skipOnce: (id: string, date: string) => Promise<string | null>; // 每週重複的行程「只刪這一次」
   setMyColor: (color: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 };
@@ -53,7 +54,9 @@ function without(map: Record<string, CalEvent>, id: string) {
   return next;
 }
 
-function overlapsRange(e: CalEvent, r: Range) {
+/** 這筆行程會不會出現在這段期間（重新拿這段期間時，要先把它們拿掉） */
+function coversRange(e: CalEvent, r: Range) {
+  if (e.repeat) return new Date(e.start_at) < r.end && (!e.repeat_until || e.repeat_until >= dateKey(r.start));
   return new Date(e.start_at) < r.end && new Date(e.end_at) >= r.start;
 }
 
@@ -77,13 +80,22 @@ function useSupabaseData(): CalendarData {
 
   const fetchRange = useCallback(
     async (client: SupabaseClient, range: Range) => {
-      const { data, error } = await client
-        .from("events")
-        .select("*")
-        .lt("start_at", range.end.toISOString())
-        .gte("end_at", range.start.toISOString())
-        .order("start_at");
-      if (error) {
+      // 一般行程：落在這段期間的；每週重複：在這段期間結束前開始、還沒結束重複的
+      const [once, weekly] = await Promise.all([
+        client
+          .from("events")
+          .select("*")
+          .is("repeat", null)
+          .lt("start_at", range.end.toISOString())
+          .gte("end_at", range.start.toISOString()),
+        client
+          .from("events")
+          .select("*")
+          .not("repeat", "is", null)
+          .lt("start_at", range.end.toISOString())
+          .or(`repeat_until.is.null,repeat_until.gte.${dateKey(range.start)}`),
+      ]);
+      if (once.error || weekly.error) {
         setOffline(true);
         return;
       }
@@ -91,8 +103,8 @@ function useSupabaseData(): CalendarData {
       setEventMap((prev) => {
         // 這段期間以伺服器為準：先拿掉舊的，再放進新的（對方離線時刪掉的也會消失）
         const next: Record<string, CalEvent> = {};
-        for (const e of Object.values(prev)) if (!overlapsRange(e, range)) next[e.id] = e;
-        for (const e of data as CalEvent[]) next[e.id] = e;
+        for (const e of Object.values(prev)) if (!coversRange(e, range)) next[e.id] = e;
+        for (const e of [...once.data, ...weekly.data] as CalEvent[]) next[e.id] = e;
         return next;
       });
     },
@@ -214,6 +226,18 @@ function useSupabaseData(): CalendarData {
     [supabase],
   );
 
+  const skipOnce = useCallback(
+    async (id: string, date: string) => {
+      const skip = [...new Set([...(eventMap[id]?.skip_dates ?? []), date])];
+      const { data, error } = await supabase.from("events").update({ skip_dates: skip }).eq("id", id).select().single();
+      if (error) return friendlyError(error.message);
+      const row = data as CalEvent;
+      setEventMap((prev) => ({ ...prev, [row.id]: row }));
+      return null;
+    },
+    [supabase, eventMap],
+  );
+
   const setMyColor = useCallback(
     async (color: string) => {
       if (!userId) return null;
@@ -236,7 +260,7 @@ function useSupabaseData(): CalendarData {
   const events = useMemo(() => Object.values(eventMap), [eventMap]);
   const me = profiles.find((p) => p.id === userId) ?? null;
 
-  return { ready, demo: false, offline, me, profiles, events, setRange, save, remove, setMyColor, signOut };
+  return { ready, demo: false, offline, me, profiles, events, setRange, save, remove, skipOnce, setMyColor, signOut };
 }
 
 function friendlyError(message: string) {
@@ -276,8 +300,13 @@ function demoEvents(): Record<string, CalEvent> {
     id: `o${day}`, title: "排休", start_at: at(day, 0), end_at: at(day + 1, 0), all_day: true,
     location: null, note: null, created_by: "demo-nezumi", source: "tup-shift", source_key: `o${day}`,
   }));
+  // 每週重複（示範）
+  const weekly = [
+    { id: "w1", title: "跑班", start_at: at(1, 19, 30), end_at: at(1, 21), all_day: false, location: "板橋第二運動場", note: null, created_by: "demo-neko", repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
+    { id: "w2", title: "日文課", start_at: at(4, 19, 30), end_at: at(4, 21), all_day: false, location: "川崎太太日文俱樂部", note: null, created_by: "demo-neko", repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
+  ];
   return Object.fromEntries(
-    [...list, ...shifts, ...offs].map((e) => [e.id, { ...e, created_at: now, updated_at: now }]),
+    [...list, ...shifts, ...offs, ...weekly].map((e) => [e.id, { ...e, created_at: now, updated_at: now }]),
   );
 }
 
@@ -303,6 +332,11 @@ function useDemoData(): CalendarData {
     return null;
   }, []);
 
+  const skipOnce = useCallback(async (id: string, date: string) => {
+    setEventMap((prev) => ({ ...prev, [id]: { ...prev[id], skip_dates: [...(prev[id].skip_dates ?? []), date] } }));
+    return null;
+  }, []);
+
   const setMyColor = useCallback(async (color: string) => {
     setProfiles((prev) => prev.map((p) => (p.id === "demo-neko" ? { ...p, color } : p)));
     return null;
@@ -319,6 +353,7 @@ function useDemoData(): CalendarData {
     setRange: () => {},
     save,
     remove,
+    skipOnce,
     setMyColor,
     signOut: async () => {},
   };
