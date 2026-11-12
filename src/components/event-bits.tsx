@@ -1,9 +1,9 @@
 import { isSameDay, timeKey } from "@/lib/dates";
 import { ROLE_EMOJI, type CalEvent, type Profile } from "@/lib/types";
-import type { ProfileLookup } from "./calendar-app";
 import { Pin } from "./icons";
+import { TOGETHER_EMOJI, fill, usePaint } from "./paint";
 
-export const FALLBACK_COLOR = "#a89b8e";
+export { FALLBACK_COLOR } from "./paint";
 
 /** 左邊時間欄的兩行字：[大字, 小字]，以 day 這天的角度來看 */
 export function timeParts(e: CalEvent, day: Date): [string, string] {
@@ -18,20 +18,13 @@ export function timeParts(e: CalEvent, day: Date): [string, string] {
   return ["整天", ""];
 }
 
-/** 標題前面的建立者 emoji（🐱 或 🐭），讓人一眼看出是誰的行程 */
-export function ownerEmoji(owner?: Profile) {
-  return owner ? `${ROLE_EMOJI[owner.role]} ` : "";
-}
-
 /** 一個行程的卡片（月曆下方當天清單、週曆用） */
-export function EventRow({ event, day, profileOf, onOpen }: {
+export function EventRow({ event, day, onOpen }: {
   event: CalEvent;
   day: Date;
-  profileOf: ProfileLookup;
   onOpen: (e: CalEvent) => void;
 }) {
-  const owner = profileOf(event.created_by);
-  const color = owner?.color ?? FALLBACK_COLOR;
+  const paint = usePaint()(event);
   const [main, sub] = timeParts(event, day);
   const isText = !/\d/.test(main);
   return (
@@ -44,10 +37,10 @@ export function EventRow({ event, day, profileOf, onOpen }: {
         <span className={isText ? "font-round text-[14px] leading-tight" : "num text-[16px] leading-tight font-medium"}>{main}</span>
         {sub && <span className="num mt-0.5 text-[12px] leading-tight text-ink-soft">{sub}</span>}
       </span>
-      <span className="h-9 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: color }} />
+      <span className="h-9 w-[3px] shrink-0 rounded-full" style={{ background: fill(paint.colors).replace("90deg", "180deg") }} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15.5px] leading-snug font-medium">
-          {ownerEmoji(owner)}
+          {paint.emoji && `${paint.emoji} `}
           {event.title}
         </span>
         {event.location && (
@@ -75,6 +68,10 @@ export function Legend({ profiles, shiftToggle }: { profiles: Profile[]; shiftTo
           {ROLE_EMOJI[p.role]} {p.name}
         </span>
       ))}
+      <span className="flex items-center gap-1.5">
+        <span className="size-2 rounded-full" style={{ background: fill(order.map((p) => p.color)) }} />
+        {TOGETHER_EMOJI} 一起
+      </span>
       {shiftToggle && (
         <button
           type="button"

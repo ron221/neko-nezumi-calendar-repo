@@ -6,6 +6,7 @@ import { ROLE_EMOJI, isShift, type CalEvent, type EventDraft } from "@/lib/types
 import type { ProfileLookup } from "./calendar-app";
 import type { Occurrence } from "@/lib/recurrence";
 import { Sheet } from "./sheet";
+import { TOGETHER_EMOJI } from "./paint";
 
 type Form = {
   title: string;
@@ -18,6 +19,7 @@ type Form = {
   note: string;
   repeat: boolean;
   repeatUntil: string; // "" = 一直重複
+  together: boolean;
 };
 
 function initialForm(event: CalEvent | null, defaultDay: Date): Form {
@@ -36,6 +38,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
       note: event.note ?? "",
       repeat: event.repeat === "weekly",
       repeatUntil: event.repeat_until ?? "",
+      together: event.together ?? false,
     };
   }
   // 新的行程：選的那天、下一個整點開始、一小時
@@ -52,6 +55,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
     note: "",
     repeat: false,
     repeatUntil: "",
+    together: false,
   };
 }
 
@@ -110,6 +114,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
       note: form.note.trim() || null,
       repeat: form.repeat ? "weekly" : null,
       repeat_until: form.repeat && form.repeatUntil ? form.repeatUntil : null,
+      together: form.together,
     };
   };
 
@@ -176,6 +181,11 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
           enterKeyHint="done"
           className="h-12 rounded-2xl bg-card px-3.5 text-[17px] font-medium shadow-soft outline-none focus:ring-2 focus:ring-accent/50"
         />
+
+        <label className="flex h-[52px] items-center justify-between rounded-2xl bg-card px-3.5 shadow-soft">
+          <span>{TOGETHER_EMOJI} 兩人一起</span>
+          <Switch checked={form.together} onChange={(v) => set("together", v)} />
+        </label>
 
         <div className="rounded-2xl bg-card shadow-soft">
           <label className="flex h-[52px] items-center justify-between px-3.5">
@@ -261,6 +271,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
         {event && (
           <>
             <p className="text-center text-xs text-ink-soft">
+              {event.together ? `${TOGETHER_EMOJI} 兩人一起・` : ""}
               {owner ? `${ROLE_EMOJI[owner.role]} ${owner.name}建立的` : ""}
               ・最後修改 {new Date(event.updated_at).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
             </p>

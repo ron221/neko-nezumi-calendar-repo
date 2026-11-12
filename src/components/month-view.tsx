@@ -1,12 +1,12 @@
 import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import { tint } from "@/lib/color";
-import { ROLE_EMOJI, isShift, type CalEvent, type Profile } from "@/lib/types";
-import type { ProfileLookup } from "./calendar-app";
-import { EventRow, FALLBACK_COLOR, Legend, type ShiftToggle } from "./event-bits";
+import { isShift, type CalEvent, type Profile } from "@/lib/types";
+import { EventRow, Legend, type ShiftToggle } from "./event-bits";
+import { fill, usePaint } from "./paint";
 
 const MAX_CHIPS = 2;
 
-export function MonthView({ days, month, today, selected, events, profiles, shiftToggle, profileOf, onSelect, onOpen }: {
+export function MonthView({ days, month, today, selected, events, profiles, shiftToggle, onSelect, onOpen }: {
   days: Date[];
   month: number;
   today: Date;
@@ -14,10 +14,10 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
   events: CalEvent[];
   profiles: Profile[];
   shiftToggle?: ShiftToggle;
-  profileOf: ProfileLookup;
   onSelect: (d: Date) => void;
   onOpen: (e: CalEvent | "new") => void;
 }) {
+  const paint = usePaint();
   const byDay = days.map((d) => events.filter((e) => overlapsDay(e.start_at, e.end_at, d)));
   const selectedIndex = days.findIndex((d) => isSameDay(d, selected));
   const selectedEvents = selectedIndex >= 0 ? byDay[selectedIndex] : [];
@@ -60,8 +60,8 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
                 </span>
                 <span className="mt-[3px] flex min-w-0 flex-col gap-px">
                   {shown.map((e) => {
-                    const owner = profileOf(e.created_by);
-                    const color = owner?.color ?? FALLBACK_COLOR;
+                    const p = paint(e);
+                    const color = p.colors[0];
                     return (
                       <span
                         key={e.id}
@@ -70,11 +70,12 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
                           isShift(e) && e.all_day
                             ? { boxShadow: `inset 0 0 0 1px ${tint(color, 0.55)}`, color: tint(color, 1.25, "#ffffff") } // 排休：只有外框
                             : e.all_day
-                              ? { backgroundColor: color, color: "#fff" }
-                              : { backgroundColor: tint(color, 0.2), color: "#4a3d33" }
+                              ? { background: fill(p.colors), color: "#fff" }
+                              : { background: fill(p.colors, 0.2), color: "#4a3d33" }
                         }
                       >
-                        {owner ? ROLE_EMOJI[owner.role] : ""}
+                        {/* 小格子很窄：emoji 縮小、兩個疊近一點，留位置給標題 */}
+                        <span className="mr-px text-[8px] tracking-[-0.2em]">{p.emoji}</span>
                         {e.title}
                       </span>
                     );
@@ -113,7 +114,7 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
         ) : (
           <div className="flex flex-col gap-2.5">
             {selectedEvents.map((e) => (
-              <EventRow key={e.id} event={e} day={selected} profileOf={profileOf} onOpen={onOpen} />
+              <EventRow key={e.id} event={e} day={selected} onOpen={onOpen} />
             ))}
           </div>
         )}

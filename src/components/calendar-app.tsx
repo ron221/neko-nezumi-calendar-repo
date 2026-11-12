@@ -7,6 +7,7 @@ import { expand, type Occurrence } from "@/lib/recurrence";
 import { ROLE_EMOJI, isShift, type Profile } from "@/lib/types";
 import { tint } from "@/lib/color";
 import { Chevron, Plus } from "./icons";
+import { ProfilesContext } from "./paint";
 import { MonthView } from "./month-view";
 import { WeekView } from "./week-view";
 import { EventSheet } from "./event-sheet";
@@ -105,6 +106,7 @@ export function CalendarApp() {
   const monthEn = MONTHS_EN[selected.getMonth()];
 
   return (
+    <ProfilesContext value={data.profiles}>
     <div className="mx-auto min-h-dvh w-full max-w-xl" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <header
         className="sticky top-0 z-10 bg-paper px-5 pb-3"
@@ -186,7 +188,6 @@ export function CalendarApp() {
             events={sorted}
             profiles={data.profiles}
             shiftToggle={hasShifts ? { hidden: hideShifts, onToggle: toggleShifts } : undefined}
-            profileOf={profileOf}
             onSelect={setSelected}
             onOpen={setEditing}
           />
@@ -197,7 +198,6 @@ export function CalendarApp() {
             events={sorted}
             profiles={data.profiles}
             shiftToggle={hasShifts ? { hidden: hideShifts, onToggle: toggleShifts } : undefined}
-            profileOf={profileOf}
             onAdd={(d) => {
               setSelected(d);
               setEditing("new");
@@ -240,5 +240,6 @@ export function CalendarApp() {
         />
       )}
     </div>
+    </ProfilesContext>
   );
 }

@@ -33,6 +33,7 @@ export type CalEvent = {
   repeat?: "weekly" | null; // 每週重複
   repeat_until?: string | null; // "2027-03-31"（含這天），null = 一直重複
   skip_dates?: string[]; // 「只刪這一次」跳過的日期
+  together?: boolean; // 貓鼠兩人一起的行程
 };
 
 export const SHIFT_SOURCE = "tup-shift";
@@ -48,4 +49,5 @@ export type EventDraft = {
   note: string | null;
   repeat: "weekly" | null;
   repeat_until: string | null;
+  together: boolean;
 };

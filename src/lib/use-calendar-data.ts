@@ -284,10 +284,10 @@ function demoEvents(): Record<string, CalEvent> {
   };
   const now = new Date().toISOString();
   const list: Omit<CalEvent, "created_at" | "updated_at">[] = [
-    { id: "d1", title: "一起吃早午餐", start_at: at(0, 10, 30), end_at: at(0, 12), all_day: false, location: "大稻埕", note: null, created_by: "demo-nezumi" },
+    { id: "d1", title: "一起吃早午餐", start_at: at(0, 10, 30), end_at: at(0, 12), all_day: false, location: "大稻埕", note: null, created_by: "demo-nezumi", together: true },
     { id: "d2", title: "看牙醫", start_at: at(2, 15), end_at: at(2, 16), all_day: false, location: null, note: "記得帶健保卡", created_by: "demo-neko" },
     { id: "d3", title: "鼠鼠加班", start_at: at(3, 19), end_at: at(3, 22), all_day: false, location: null, note: null, created_by: "demo-nezumi" },
-    { id: "d4", title: "週末小旅行", start_at: at(5, 0), end_at: at(7, 0), all_day: true, location: "宜蘭", note: null, created_by: "demo-neko" },
+    { id: "d4", title: "週末小旅行", start_at: at(5, 0), end_at: at(7, 0), all_day: true, location: "宜蘭", note: null, created_by: "demo-neko", together: true },
     { id: "d5", title: "電影：晚場", start_at: at(5, 20, 40), end_at: at(5, 23), all_day: false, location: "信義威秀", note: null, created_by: "demo-nezumi" },
     { id: "d6", title: "貓貓健身", start_at: at(9, 7), end_at: at(9, 8), all_day: false, location: null, note: null, created_by: "demo-neko" },
   ];
@@ -302,7 +302,7 @@ function demoEvents(): Record<string, CalEvent> {
   }));
   // 每週重複（示範）
   const weekly = [
-    { id: "w1", title: "跑班", start_at: at(1, 19, 30), end_at: at(1, 21), all_day: false, location: "板橋第二運動場", note: null, created_by: "demo-neko", repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
+    { id: "w1", title: "跑班", start_at: at(1, 19, 30), end_at: at(1, 21), all_day: false, location: "板橋第二運動場", note: null, created_by: "demo-neko", together: true, repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
     { id: "w2", title: "日文課", start_at: at(4, 19, 30), end_at: at(4, 21), all_day: false, location: "川崎太太日文俱樂部", note: null, created_by: "demo-neko", repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
   ];
   return Object.fromEntries(
