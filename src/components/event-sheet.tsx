@@ -17,7 +17,7 @@ type Form = {
   endTime: string;
   location: string;
   note: string;
-  repeat: boolean;
+  repeat: "" | "weekly" | "yearly"; // "" = 不重複
   repeatUntil: string; // "" = 一直重複
   together: boolean;
 };
@@ -36,7 +36,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
       endTime: event.all_day ? "10:00" : timeKey(e),
       location: event.location ?? "",
       note: event.note ?? "",
-      repeat: event.repeat === "weekly",
+      repeat: event.repeat ?? "",
       repeatUntil: event.repeat_until ?? "",
       together: event.together ?? false,
     };
@@ -53,7 +53,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
     endTime: hour === 23 ? "23:59" : `${String(hour + 1).padStart(2, "0")}:00`,
     location: "",
     note: "",
-    repeat: false,
+    repeat: "",
     repeatUntil: "",
     together: false,
   };
@@ -112,7 +112,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
       end_at: end.toISOString(),
       location: form.location.trim() || null,
       note: form.note.trim() || null,
-      repeat: form.repeat ? "weekly" : null,
+      repeat: form.repeat || null,
       repeat_until: form.repeat && form.repeatUntil ? form.repeatUntil : null,
       together: form.together,
     };
@@ -216,10 +216,29 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
               <PickerField type="time" value={form.endTime} display={form.endTime} onChange={(v) => set("endTime", v)} className="w-[76px]" />
             )}
           </Row>
-          <label className="flex h-[52px] items-center justify-between border-t border-line/70 px-3.5">
-            <span>每週重複</span>
-            <Switch checked={form.repeat} onChange={(v) => set("repeat", v)} />
-          </label>
+          <div className="flex h-[52px] items-center justify-between gap-2 border-t border-line/70 px-3.5">
+            <span className="shrink-0">重複</span>
+            <div className="flex rounded-full bg-line/55 p-[3px]" role="radiogroup" aria-label="重複">
+              {(
+                [
+                  ["", "不重複"],
+                  ["weekly", "每週"],
+                  ["yearly", "每年"],
+                ] as const
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.repeat === v}
+                  onClick={() => set("repeat", v)}
+                  className={`h-8 rounded-full px-3 text-[14px] ${form.repeat === v ? "bg-card text-ink shadow-soft" : "text-ink-soft"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           {form.repeat && (
             <Row label="直到">
               {form.repeatUntil && (
@@ -265,7 +284,9 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
         )}
         {once && (
           <p className="rounded-xl bg-accent-soft/70 px-3 py-2 text-[13px] leading-relaxed text-[#8a4a2b]">
-            這是每週{WEEKDAYS[new Date(event!.start_at).getDay()]}重複的行程。在這裡改的會套用到每一週；只有某一週不去的話，按下面的「只刪這一次」。
+            {event!.repeat === "yearly"
+              ? `這是每年 ${new Date(event!.start_at).getMonth() + 1}/${new Date(event!.start_at).getDate()} 重複的行程。在這裡改的會套用到每一年。`
+              : `這是每週${WEEKDAYS[new Date(event!.start_at).getDay()]}重複的行程。在這裡改的會套用到每一週；只有某一週不去的話，按下面的「只刪這一次」。`}
           </p>
         )}
         {event && (
@@ -293,7 +314,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
                 confirmDelete ? "bg-danger text-white" : "bg-card text-danger shadow-soft"
               }`}
             >
-              {confirmDelete ? "確定要刪除嗎？再按一次" : once ? "刪除每一週" : "刪除行程"}
+              {confirmDelete ? "確定要刪除嗎？再按一次" : once ? (event?.repeat === "yearly" ? "刪除每一年" : "刪除每一週") : "刪除行程"}
             </button>
           </>
         )}

@@ -305,8 +305,15 @@ function demoEvents(): Record<string, CalEvent> {
     { id: "w1", title: "跑班", start_at: at(1, 19, 30), end_at: at(1, 21), all_day: false, location: "板橋第二運動場", note: null, created_by: "demo-neko", together: true, repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
     { id: "w2", title: "日文課", start_at: at(4, 19, 30), end_at: at(4, 21), all_day: false, location: "川崎太太日文俱樂部", note: null, created_by: "demo-neko", repeat: "weekly" as const, repeat_until: null, skip_dates: [] },
   ];
+  // 每年重複（示範）：生日
+  const y = new Date().getFullYear();
+  const day = (m: number, d: number) => new Date(y, m - 1, d).toISOString();
+  const yearly = [
+    { id: "y1", title: "貓生日 🎂", start_at: day(2, 21), end_at: day(2, 22), all_day: true, location: null, note: null, created_by: "demo-neko", repeat: "yearly" as const, repeat_until: null, skip_dates: [] },
+    { id: "y2", title: "鼠生日 🎂", start_at: day(11, 20), end_at: day(11, 21), all_day: true, location: null, note: null, created_by: "demo-nezumi", repeat: "yearly" as const, repeat_until: null, skip_dates: [] },
+  ];
   return Object.fromEntries(
-    [...list, ...shifts, ...offs, ...weekly].map((e) => [e.id, { ...e, created_at: now, updated_at: now }]),
+    [...list, ...shifts, ...offs, ...weekly, ...yearly].map((e) => [e.id, { ...e, created_at: now, updated_at: now }]),
   );
 }
 
