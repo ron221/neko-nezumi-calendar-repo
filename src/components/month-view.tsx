@@ -1,6 +1,6 @@
 import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import { tint } from "@/lib/color";
-import { isShift, type CalEvent, type Profile } from "@/lib/types";
+import { ROLE_EMOJI, isShift, type CalEvent, type Profile } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
 import { EventRow, FALLBACK_COLOR, Legend } from "./event-bits";
 
@@ -59,7 +59,8 @@ export function MonthView({ days, month, today, selected, events, profiles, prof
                 </span>
                 <span className="mt-[3px] flex min-w-0 flex-col gap-px">
                   {shown.map((e) => {
-                    const color = profileOf(e.created_by)?.color ?? FALLBACK_COLOR;
+                    const owner = profileOf(e.created_by);
+                    const color = owner?.color ?? FALLBACK_COLOR;
                     return (
                       <span
                         key={e.id}
@@ -72,6 +73,7 @@ export function MonthView({ days, month, today, selected, events, profiles, prof
                               : { backgroundColor: tint(color, 0.2), color: "#4a3d33" }
                         }
                       >
+                        {owner ? ROLE_EMOJI[owner.role] : ""}
                         {e.title}
                       </span>
                     );

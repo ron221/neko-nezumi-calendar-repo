@@ -1,5 +1,4 @@
 import { isSameDay, timeKey } from "@/lib/dates";
-import { tint } from "@/lib/color";
 import { ROLE_EMOJI, type CalEvent, type Profile } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
 import { Pin } from "./icons";
@@ -19,18 +18,9 @@ export function timeParts(e: CalEvent, day: Date): [string, string] {
   return ["整天", ""];
 }
 
-/** 建立者的小頭像（淡淡的顏色底） */
-export function OwnerBadge({ owner, size = 30 }: { owner?: Profile; size?: number }) {
-  if (!owner) return null;
-  return (
-    <span
-      className="grid shrink-0 place-items-center rounded-full"
-      style={{ width: size, height: size, fontSize: size * 0.55, backgroundColor: tint(owner.color, 0.22) }}
-      aria-label={`${owner.name}建立的`}
-    >
-      {ROLE_EMOJI[owner.role]}
-    </span>
-  );
+/** 標題前面的建立者 emoji（🐱 或 🐭），讓人一眼看出是誰的行程 */
+export function ownerEmoji(owner?: Profile) {
+  return owner ? `${ROLE_EMOJI[owner.role]} ` : "";
 }
 
 /** 一個行程的卡片（月曆下方當天清單、週曆用） */
@@ -56,7 +46,10 @@ export function EventRow({ event, day, profileOf, onOpen }: {
       </span>
       <span className="h-9 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: color }} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15.5px] leading-snug font-medium">{event.title}</span>
+        <span className="block truncate text-[15.5px] leading-snug font-medium">
+          {ownerEmoji(owner)}
+          {event.title}
+        </span>
         {event.location && (
           <span className="mt-0.5 flex items-center gap-1 text-[12.5px] text-ink-soft">
             <Pin className="shrink-0" />
@@ -64,7 +57,6 @@ export function EventRow({ event, day, profileOf, onOpen }: {
           </span>
         )}
       </span>
-      <OwnerBadge owner={owner} />
     </button>
   );
 }
