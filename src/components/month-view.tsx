@@ -2,17 +2,18 @@ import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import { tint } from "@/lib/color";
 import { ROLE_EMOJI, isShift, type CalEvent, type Profile } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
-import { EventRow, FALLBACK_COLOR, Legend } from "./event-bits";
+import { EventRow, FALLBACK_COLOR, Legend, type ShiftToggle } from "./event-bits";
 
 const MAX_CHIPS = 2;
 
-export function MonthView({ days, month, today, selected, events, profiles, profileOf, onSelect, onOpen }: {
+export function MonthView({ days, month, today, selected, events, profiles, shiftToggle, profileOf, onSelect, onOpen }: {
   days: Date[];
   month: number;
   today: Date;
   selected: Date;
   events: CalEvent[];
   profiles: Profile[];
+  shiftToggle?: ShiftToggle;
   profileOf: ProfileLookup;
   onSelect: (d: Date) => void;
   onOpen: (e: CalEvent | "new") => void;
@@ -91,7 +92,7 @@ export function MonthView({ days, month, today, selected, events, profiles, prof
       </div>
 
       <div className="mt-3">
-        <Legend profiles={profiles} />
+        <Legend profiles={profiles} shiftToggle={shiftToggle} />
       </div>
 
       <section className="mt-6 px-1">

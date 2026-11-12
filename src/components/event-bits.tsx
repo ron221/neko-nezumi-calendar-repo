@@ -61,18 +61,36 @@ export function EventRow({ event, day, profileOf, onOpen }: {
   );
 }
 
-/** 兩人的顏色圖例 */
-export function Legend({ profiles }: { profiles: Profile[] }) {
+export type ShiftToggle = { hidden: boolean; onToggle: () => void };
+
+/** 兩人的顏色圖例，旁邊是「顯示／隱藏鼠的班表」 */
+export function Legend({ profiles, shiftToggle }: { profiles: Profile[]; shiftToggle?: ShiftToggle }) {
   if (!profiles.length) return null;
   const order = [...profiles].sort((a, b) => (a.role === "neko" ? 0 : 1) - (b.role === "neko" ? 0 : 1));
   return (
-    <div className="flex justify-center gap-4 text-[12px] text-ink-soft">
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-ink-soft">
       {order.map((p) => (
         <span key={p.id} className="flex items-center gap-1.5">
           <span className="size-2 rounded-full" style={{ backgroundColor: p.color }} />
           {ROLE_EMOJI[p.role]} {p.name}
         </span>
       ))}
+      {shiftToggle && (
+        <button
+          type="button"
+          onClick={shiftToggle.onToggle}
+          aria-pressed={!shiftToggle.hidden}
+          className={`flex h-8 items-center gap-1.5 rounded-full px-3 font-round text-[13px] ${
+            shiftToggle.hidden ? "bg-line/60 text-ink-soft" : "bg-card text-ink shadow-soft"
+          }`}
+        >
+          <span
+            className={`size-2 rounded-full ${shiftToggle.hidden ? "border border-ink-soft/60" : ""}`}
+            style={shiftToggle.hidden ? undefined : { backgroundColor: order.find((p) => p.role === "nezumi")?.color }}
+          />
+          {shiftToggle.hidden ? "顯示鼠的班表" : "隱藏鼠的班表"}
+        </button>
+      )}
     </div>
   );
 }

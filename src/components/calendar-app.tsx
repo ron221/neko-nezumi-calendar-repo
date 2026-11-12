@@ -14,6 +14,7 @@ import { SettingsSheet } from "./settings-sheet";
 
 type View = "month" | "week";
 const VIEW_KEY = "nn-view";
+const SHIFTS_KEY = "nn-hide-shifts";
 const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export type ProfileLookup = (id: string) => Profile | undefined;
@@ -27,6 +28,22 @@ export function CalendarApp() {
       return "month";
     }
   });
+  // 鼠的班表要不要顯示（記在這支手機上，兩個人各自設定）
+  const [hideShifts, setHideShifts] = useState(() => {
+    try {
+      return localStorage.getItem(SHIFTS_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleShifts = () => {
+    setHideShifts((h) => {
+      try {
+        localStorage.setItem(SHIFTS_KEY, h ? "0" : "1");
+      } catch {}
+      return !h;
+    });
+  };
   const [today, setToday] = useState(() => startOfDay(new Date()));
   const [selected, setSelected] = useState(today);
   const [editing, setEditing] = useState<Occurrence | "new" | null>(null);
@@ -58,20 +75,21 @@ export function CalendarApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeKey, setRange]);
 
+  const hasShifts = data.events.some(isShift);
   const profileOf: ProfileLookup = (id) => data.profiles.find((p) => p.id === id);
 
   const rangeStart = days[0];
   const rangeEnd = addDays(days[days.length - 1], 1);
   const sorted = useMemo(
     () =>
-      expand(data.events, rangeStart, rangeEnd).sort(
+      expand(hideShifts ? data.events.filter((e) => !isShift(e)) : data.events, rangeStart, rangeEnd).sort(
         (a, b) =>
           Number(isShift(b)) - Number(isShift(a)) || // 班表排最前面
           Number(b.all_day) - Number(a.all_day) ||
           a.start_at.localeCompare(b.start_at),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data.events, rangeKey],
+    [data.events, rangeKey, hideShifts],
   );
 
   const move = (dir: -1 | 1) => {
@@ -167,6 +185,7 @@ export function CalendarApp() {
             selected={selected}
             events={sorted}
             profiles={data.profiles}
+            shiftToggle={hasShifts ? { hidden: hideShifts, onToggle: toggleShifts } : undefined}
             profileOf={profileOf}
             onSelect={setSelected}
             onOpen={setEditing}
@@ -177,6 +196,7 @@ export function CalendarApp() {
             today={today}
             events={sorted}
             profiles={data.profiles}
+            shiftToggle={hasShifts ? { hidden: hideShifts, onToggle: toggleShifts } : undefined}
             profileOf={profileOf}
             onAdd={(d) => {
               setSelected(d);

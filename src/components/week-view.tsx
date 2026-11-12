@@ -1,14 +1,15 @@
 import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import type { CalEvent, Profile } from "@/lib/types";
 import type { ProfileLookup } from "./calendar-app";
-import { EventRow, Legend } from "./event-bits";
+import { EventRow, Legend, type ShiftToggle } from "./event-bits";
 
 // 手機上 7 欄的時間格太擠，週曆用一天一列的清單
-export function WeekView({ days, today, events, profiles, profileOf, onAdd, onOpen }: {
+export function WeekView({ days, today, events, profiles, shiftToggle, profileOf, onAdd, onOpen }: {
   days: Date[];
   today: Date;
   events: CalEvent[];
   profiles: Profile[];
+  shiftToggle?: ShiftToggle;
   profileOf: ProfileLookup;
   onAdd: (d: Date) => void;
   onOpen: (e: CalEvent) => void;
@@ -57,7 +58,7 @@ export function WeekView({ days, today, events, profiles, profileOf, onAdd, onOp
         })}
       </div>
       <div className="mt-4">
-        <Legend profiles={profiles} />
+        <Legend profiles={profiles} shiftToggle={shiftToggle} />
       </div>
     </>
   );
