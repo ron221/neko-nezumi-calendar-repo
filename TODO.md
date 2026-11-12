@@ -1,5 +1,12 @@
 # 待辦
 
+## 設定狀態（2026-11-12）
+
+- [x] Supabase 專案、跑完 `20261112000000_init.sql`、關閉註冊、建好兩個帳號和 profiles
+- [x] GitHub repo `ron221/neko-nezumi-calendar-repo`，Vercel 部署好、填好 4 個環境變數
+- [x] 兩人登入、新增行程、即時同步實測 OK
+- [ ] 想要的話把網址改成 `neko-nezumi-calendar.vercel.app`（Vercel → Settings → Domains），Supabase 的 Site URL 也要跟著改
+
 ## 之後要做的功能（2026-11-12）
 
 - [ ] **推播提醒**：行程開始前提醒對方或自己。

@@ -13,7 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 只給兩個人用的日曆 PWA：🐱 貓 = 使用者本人，🐭 鼠 = 女友。Next.js（App Router）+ Supabase（Postgres、Auth、Realtime、RLS）+ Vercel。
 
 - **回覆用繁體中文**。使用者常用手機操作，每次結尾直接寫出要問的問題和可以選的答案。
-- **部署**：推到 `main` 就會由 Vercel 上線（neko-nezumi-calendar.vercel.app）。
+- **部署**：推到 `main` 就會由 Vercel 上線（目前網址 https://neko-nezumi-calendar-repo21.vercel.app ，GitHub repo `ron221/neko-nezumi-calendar-repo`）。
   - **還沒正式開始用之前**：改完在 localhost 確認、提交之後，可以直接推 `main`，不用等使用者說「推送」。
   - 改到資料庫（`supabase/migrations`）的，一律先請使用者在 Supabase 的 SQL Editor 執行 SQL、確認生效後才推送。
 - **小手機**：改到畫面就用三種手機大小檢查——iPhone SE 375×667、iPhone 15 393×852、Android 360 寬——說出哪些放不下，並附截圖。
