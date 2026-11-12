@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* 只做淺色（第一版）。主題色和 manifest、viewport 的 themeColor 一樣 */
+@theme {
+  --color-paper: #fbf7f0;
+  --color-card: #ffffff;
+  --color-ink: #2f2a26;
+  --color-ink-soft: #8a8178;
+  --color-line: #ebe3d8;
+  --color-accent: #e07a3f;
+  --color-danger: #d64545;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --animate-shake: shake 0.35s ease-in-out;
+  --animate-sheet: sheet 0.22s ease-out;
+  --animate-fade: fade 0.18s ease-out;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+  @keyframes sheet {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 }
 
+:root {
+  color-scheme: light;
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* iPhone 輸入框字小於 16px 會自動放大畫面 */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* 瀏海和底部橫條 */
+.safe-area {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 行程面板裡的日期、時間 */
+.field {
+  min-width: 0;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-paper);
+  padding: 0 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.field::-webkit-date-and-time-value {
+  text-align: center;
 }
