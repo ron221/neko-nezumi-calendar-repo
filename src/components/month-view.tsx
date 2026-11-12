@@ -92,10 +92,10 @@ export function MonthView({ days, month, today, selected, events, profiles, prof
 
       <section className="mt-6 px-1">
         <div className="mb-3 flex items-end gap-2.5 px-1">
-          <span className="num text-[34px] leading-[0.8] font-medium">{selected.getDate()}</span>
-          <span className="flex-1 pb-px font-round text-[15px] leading-none text-ink-soft">
-            {selected.getMonth() + 1}月・週{WEEKDAYS[selected.getDay()]}
+          <span className="num text-[30px] leading-[0.8] font-medium">
+            {selected.getMonth() + 1}/{selected.getDate()}
           </span>
+          <span className="flex-1 pb-px font-round text-[15px] leading-none text-ink-soft">週{WEEKDAYS[selected.getDay()]}</span>
         </div>
         {selectedEvents.length === 0 ? (
           <button
