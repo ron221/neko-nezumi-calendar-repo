@@ -23,5 +23,7 @@
 
 ## 小事
 
+- [ ] 每年 6 月左右政府公布隔年的辦公日曆後，跑 `npm run holidays:build -- 2028` 更新國定假日（目前有 2026、2027）（2026-11-12）
+
 - [ ] 換上正式的 App 圖示（使用者之後會給）：`public/icons/icon-192.png`、`icon-512.png`、`apple-touch-icon.png`（180）、`src/app/icon.png`。目前是 `npm run icons:build` 產生的暫時圖示。（2026-11-12）
 - [ ] iOS 主畫面打開時的啟動畫面（apple-touch-startup-image）。（2026-11-12）

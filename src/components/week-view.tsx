@@ -1,5 +1,6 @@
 import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import type { CalEvent, Profile } from "@/lib/types";
+import { holidayOn } from "@/lib/holidays";
 import { EventRow, Legend, type ShiftToggle } from "./event-bits";
 
 // 手機上 7 欄的時間格太擠，週曆用一天一列的清單
@@ -18,7 +19,8 @@ export function WeekView({ days, today, events, profiles, shiftToggle, onAdd, on
         {days.map((d) => {
           const list = events.filter((e) => overlapsDay(e.start_at, e.end_at, d));
           const isToday = isSameDay(d, today);
-          const weekend = d.getDay() === 0 || d.getDay() === 6;
+          const holiday = holidayOn(d);
+          const weekend = d.getDay() === 0 || d.getDay() === 6 || holiday?.off;
           return (
             <div key={d.getTime()} className="flex gap-3 border-b border-line/70 py-3 last:border-b-0">
               <button
@@ -37,6 +39,9 @@ export function WeekView({ days, today, events, profiles, shiftToggle, onAdd, on
                 >
                   {d.getDate()}
                 </span>
+                {holiday && (
+                  <span className="mt-1 w-full text-center font-round text-[10.5px] leading-tight break-all text-accent">{holiday.short}</span>
+                )}
               </button>
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 {list.length === 0 ? (

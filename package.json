@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "icons:build": "node scripts/build-icons.mjs"
+    "icons:build": "node scripts/build-icons.mjs",
+    "holidays:build": "node scripts/build-holidays.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

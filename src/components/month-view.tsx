@@ -1,6 +1,7 @@
 import { WEEKDAYS, isSameDay, overlapsDay } from "@/lib/dates";
 import { tint } from "@/lib/color";
 import { isShift, type CalEvent, type Profile } from "@/lib/types";
+import { holidayOn } from "@/lib/holidays";
 import { EventRow, Legend, type ShiftToggle } from "./event-bits";
 import { fill, usePaint } from "./paint";
 
@@ -21,6 +22,7 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
   const byDay = days.map((d) => events.filter((e) => overlapsDay(e.start_at, e.end_at, d)));
   const selectedIndex = days.findIndex((d) => isSameDay(d, selected));
   const selectedEvents = selectedIndex >= 0 ? byDay[selectedIndex] : [];
+  const selectedHoliday = holidayOn(selected);
 
   return (
     <>
@@ -39,8 +41,11 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
             const isToday = isSameDay(d, today);
             const isSelected = isSameDay(d, selected);
             const list = byDay[i];
-            const overflow = list.length > MAX_CHIPS;
-            const shown = overflow ? list.slice(0, MAX_CHIPS - 1) : list;
+            const holiday = holidayOn(d);
+            // 國定假日的名字佔一格小條的位置
+            const slots = holiday ? MAX_CHIPS - 1 : MAX_CHIPS;
+            const overflow = list.length > slots;
+            const shown = overflow ? list.slice(0, slots - 1) : list;
             return (
               <button
                 key={d.getTime()}
@@ -53,12 +58,15 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
               >
                 <span
                   className={`num mx-auto grid size-[26px] place-items-center rounded-full text-[14px] ${
-                    isToday ? "bg-accent font-semibold text-white" : isSelected ? "font-semibold" : ""
+                    isToday ? "bg-accent font-semibold text-white" : `${isSelected ? "font-semibold" : ""} ${holiday?.off ? "text-accent" : ""}`
                   }`}
                 >
                   {d.getDate()}
                 </span>
                 <span className="mt-[3px] flex min-w-0 flex-col gap-px">
+                  {holiday && (
+                    <span className="block truncate text-center font-round text-[9.5px] leading-[13px] text-accent">{holiday.short}</span>
+                  )}
                   {shown.map((e) => {
                     const p = paint(e);
                     const color = p.colors[0];
@@ -101,7 +109,10 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
           <span className="num text-[30px] leading-[0.8] font-medium">
             {selected.getMonth() + 1}/{selected.getDate()}
           </span>
-          <span className="flex-1 pb-px font-round text-[15px] leading-none text-ink-soft">週{WEEKDAYS[selected.getDay()]}</span>
+          <span className="flex-1 pb-px font-round text-[15px] leading-none text-ink-soft">
+            週{WEEKDAYS[selected.getDay()]}
+            {selectedHoliday && <span className="ml-2 text-accent">{selectedHoliday.name}</span>}
+          </span>
         </div>
         {selectedEvents.length === 0 ? (
           <button
