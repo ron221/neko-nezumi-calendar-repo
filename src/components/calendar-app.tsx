@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { addDays, addMonths, isSameDay, monthGrid, startOfDay, weekDays } from "@/lib/dates";
 import { useCalendarData } from "@/lib/use-calendar-data";
+import { useSwipe } from "@/lib/use-swipe";
 import { expand, type Occurrence } from "@/lib/recurrence";
 import { ROLE_EMOJI, isShift, type Profile } from "@/lib/types";
 import { tint } from "@/lib/color";
@@ -103,6 +104,8 @@ export function CalendarApp() {
     }
   };
 
+  const swipe = useSwipe(move);
+
   const monthEn = MONTHS_EN[selected.getMonth()];
 
   return (
@@ -178,7 +181,9 @@ export function CalendarApp() {
         )}
       </header>
 
-      <main className="px-3 pb-32">
+      {/* 左右滑換月／週；換的時候內容淡入一下（只用 opacity，不位移，iPhone 上不會跳動） */}
+      <main className="px-3 pb-32" {...swipe}>
+        <div key={rangeKey} className="animate-fade">
         {view === "month" ? (
           <MonthView
             days={days}
@@ -204,6 +209,7 @@ export function CalendarApp() {
             onOpen={setEditing}
           />
         )}
+        </div>
       </main>
 
       <button
