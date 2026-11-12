@@ -20,6 +20,8 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
 }) {
   const paint = usePaint();
   const byDay = days.map((d) => events.filter((e) => overlapsDay(e.start_at, e.end_at, d)));
+  // 「隱藏鼠的班表」只藏月曆格子裡的；下面那天的清單照樣全部列出
+  const inGrid = shiftToggle?.hidden ? byDay.map((list) => list.filter((e) => !isShift(e))) : byDay;
   const selectedIndex = days.findIndex((d) => isSameDay(d, selected));
   const selectedEvents = selectedIndex >= 0 ? byDay[selectedIndex] : [];
   const selectedHoliday = holidayOn(selected);
@@ -40,7 +42,7 @@ export function MonthView({ days, month, today, selected, events, profiles, shif
             const inMonth = d.getMonth() === month;
             const isToday = isSameDay(d, today);
             const isSelected = isSameDay(d, selected);
-            const list = byDay[i];
+            const list = inGrid[i];
             const holiday = holidayOn(d);
             // 國定假日的名字佔一格小條的位置
             const slots = holiday ? MAX_CHIPS - 1 : MAX_CHIPS;

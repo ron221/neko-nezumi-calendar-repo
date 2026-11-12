@@ -83,14 +83,14 @@ export function CalendarApp() {
   const rangeEnd = addDays(days[days.length - 1], 1);
   const sorted = useMemo(
     () =>
-      expand(hideShifts ? data.events.filter((e) => !isShift(e)) : data.events, rangeStart, rangeEnd).sort(
+      expand(data.events, rangeStart, rangeEnd).sort(
         (a, b) =>
           Number(isShift(b)) - Number(isShift(a)) || // 班表排最前面
           Number(b.all_day) - Number(a.all_day) ||
           a.start_at.localeCompare(b.start_at),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data.events, rangeKey, hideShifts],
+    [data.events, rangeKey],
   );
 
   const move = (dir: -1 | 1) => {
@@ -197,7 +197,6 @@ export function CalendarApp() {
             today={today}
             events={sorted}
             profiles={data.profiles}
-            shiftToggle={hasShifts ? { hidden: hideShifts, onToggle: toggleShifts } : undefined}
             onAdd={(d) => {
               setSelected(d);
               setEditing("new");
