@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { addDays, dateKey, startOfWeek } from "@/lib/dates";
-import { DEFAULT_COLOR, type CalEvent, type EventDraft, type Profile } from "@/lib/types";
+import { DEFAULT_COLOR, type CalEvent, type EventDraft, type Place, type Profile } from "@/lib/types";
 
 // 最近載入過的行程和兩人的資料存在手機上（localStorage），離線打開也看得到。
 // 換了存的格式就改 key 的版本號。
@@ -27,6 +27,7 @@ export type CalendarData = {
   save: (draft: EventDraft) => Promise<string | null>; // 回傳錯誤訊息
   remove: (id: string) => Promise<string | null>;
   skipOnce: (id: string, date: string) => Promise<string | null>; // 每週重複的行程「只刪這一次」
+  loadPlaces: () => Promise<Place[]>; // 用過的地點，常用的排前面
   setMyColor: (color: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 };
@@ -55,6 +56,20 @@ function without(map: Record<string, CalEvent>, id: string) {
 }
 
 /** 這筆行程會不會出現在這段期間（重新拿這段期間時，要先把它們拿掉） */
+/** 把行程的地點整理成「用過的地點」：同名的合在一起，連結用最近一次貼的 */
+function toPlaces(rows: { location: string | null; location_url?: string | null }[]): Place[] {
+  const map = new Map<string, Place>();
+  for (const r of rows) {
+    const name = r.location?.trim();
+    if (!name) continue;
+    const p = map.get(name) ?? { name, url: null, count: 0 };
+    p.count++;
+    if (!p.url && r.location_url) p.url = r.location_url; // rows 是新的在前面
+    map.set(name, p);
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count);
+}
+
 function coversRange(e: CalEvent, r: Range) {
   if (e.repeat) return new Date(e.start_at) < r.end && (!e.repeat_until || e.repeat_until >= dateKey(r.start));
   return new Date(e.start_at) < r.end && new Date(e.end_at) >= r.start;
@@ -226,6 +241,21 @@ function useSupabaseData(): CalendarData {
     [supabase],
   );
 
+  const eventMapRef = useRef(eventMap);
+  useEffect(() => {
+    eventMapRef.current = eventMap;
+  }, [eventMap]);
+  const loadPlaces = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("events")
+      .select("location, location_url")
+      .not("location", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(1000);
+    // 沒網路時用手機上存的行程
+    return toPlaces(error ? Object.values(eventMapRef.current) : (data as CalEvent[]));
+  }, [supabase]);
+
   const skipOnce = useCallback(
     async (id: string, date: string) => {
       const skip = [...new Set([...(eventMap[id]?.skip_dates ?? []), date])];
@@ -260,7 +290,7 @@ function useSupabaseData(): CalendarData {
   const events = useMemo(() => Object.values(eventMap), [eventMap]);
   const me = profiles.find((p) => p.id === userId) ?? null;
 
-  return { ready, demo: false, offline, me, profiles, events, setRange, save, remove, skipOnce, setMyColor, signOut };
+  return { ready, demo: false, offline, me, profiles, events, setRange, save, remove, skipOnce, loadPlaces, setMyColor, signOut };
 }
 
 function friendlyError(message: string) {
@@ -339,6 +369,8 @@ function useDemoData(): CalendarData {
     return null;
   }, []);
 
+  const loadPlaces = useCallback(async () => toPlaces(Object.values(eventMap)), [eventMap]);
+
   const skipOnce = useCallback(async (id: string, date: string) => {
     setEventMap((prev) => ({ ...prev, [id]: { ...prev[id], skip_dates: [...(prev[id].skip_dates ?? []), date] } }));
     return null;
@@ -361,6 +393,7 @@ function useDemoData(): CalendarData {
     save,
     remove,
     skipOnce,
+    loadPlaces,
     setMyColor,
     signOut: async () => {},
   };

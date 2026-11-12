@@ -1,6 +1,6 @@
 import { isSameDay, timeKey } from "@/lib/dates";
-import { ROLE_EMOJI, type CalEvent, type Profile } from "@/lib/types";
-import { Pin } from "./icons";
+import { ROLE_EMOJI, mapUrl, type CalEvent, type Profile } from "@/lib/types";
+import { MapIcon, Pin } from "./icons";
 import { TOGETHER_EMOJI, fill, usePaint } from "./paint";
 
 export { FALLBACK_COLOR } from "./paint";
@@ -28,29 +28,42 @@ export function EventRow({ event, day, onOpen }: {
   const [main, sub] = timeParts(event, day);
   const isText = !/\d/.test(main);
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(event)}
-      className="flex w-full items-center gap-3 rounded-2xl bg-card py-3 pr-3 pl-3.5 text-left shadow-soft active:bg-[#f9f3ea]"
-    >
-      <span className="flex w-11 shrink-0 flex-col">
-        <span className={isText ? "font-round text-[14px] leading-tight" : "num text-[16px] leading-tight font-medium"}>{main}</span>
-        {sub && <span className="num mt-0.5 text-[12px] leading-tight text-ink-soft">{sub}</span>}
-      </span>
-      <span className="h-9 w-[3px] shrink-0 rounded-full" style={{ background: fill(paint.colors).replace("90deg", "180deg") }} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15.5px] leading-snug font-medium">
-          {paint.emoji && `${paint.emoji} `}
-          {event.title}
+    <div className="flex w-full items-stretch rounded-2xl bg-card shadow-soft">
+      <button
+        type="button"
+        onClick={() => onOpen(event)}
+        className={`flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-3 pl-3.5 text-left active:bg-[#f9f3ea] ${event.location ? "pr-1" : "pr-3"}`}
+      >
+        <span className="flex w-11 shrink-0 flex-col">
+          <span className={isText ? "font-round text-[14px] leading-tight" : "num text-[16px] leading-tight font-medium"}>{main}</span>
+          {sub && <span className="num mt-0.5 text-[12px] leading-tight text-ink-soft">{sub}</span>}
         </span>
-        {event.location && (
-          <span className="mt-0.5 flex items-center gap-1 text-[12.5px] text-ink-soft">
-            <Pin className="shrink-0" />
-            <span className="truncate">{event.location}</span>
+        <span className="h-9 w-[3px] shrink-0 rounded-full" style={{ background: fill(paint.colors).replace("90deg", "180deg") }} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15.5px] leading-snug font-medium">
+            {paint.emoji && `${paint.emoji} `}
+            {event.title}
           </span>
-        )}
-      </span>
-    </button>
+          {event.location && (
+            <span className="mt-0.5 flex items-center gap-1 text-[12.5px] text-ink-soft">
+              <Pin className="shrink-0" />
+              <span className="truncate">{event.location}</span>
+            </span>
+          )}
+        </span>
+      </button>
+      {event.location && (
+        <a
+          href={mapUrl(event.location, event.location_url)}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`在 Google 地圖打開「${event.location}」`}
+          className="m-2 ml-0 grid w-10 shrink-0 place-items-center rounded-xl bg-paper text-ink-soft active:bg-line"
+        >
+          <MapIcon />
+        </a>
+      )}
+    </div>
   );
 }
 

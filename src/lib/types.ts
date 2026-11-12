@@ -24,6 +24,7 @@ export type CalEvent = {
   end_at: string; // ISO；全天行程是最後一天的隔天 00:00
   all_day: boolean;
   location: string | null;
+  location_url?: string | null; // 地點的 Google 地圖連結
   note: string | null;
   created_by: string;
   created_at: string;
@@ -46,8 +47,17 @@ export type EventDraft = {
   end_at: string;
   all_day: boolean;
   location: string | null;
+  location_url: string | null;
   note: string | null;
   repeat: "weekly" | "yearly" | null;
   repeat_until: string | null;
   together: boolean;
 };
+
+/** 用過的地點（新增行程時的建議清單） */
+export type Place = { name: string; url: string | null; count: number };
+
+/** 地點在 Google 地圖上的網址：有貼連結就用連結，沒有就用名稱搜尋 */
+export function mapUrl(location: string, url?: string | null) {
+  return url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+}

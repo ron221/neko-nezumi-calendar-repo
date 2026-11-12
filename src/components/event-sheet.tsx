@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { WEEKDAYS, addDays, dateKey, fromKeys, timeKey } from "@/lib/dates";
-import { ROLE_EMOJI, isShift, type CalEvent, type EventDraft } from "@/lib/types";
+import { ROLE_EMOJI, isShift, mapUrl, type CalEvent, type EventDraft, type Place } from "@/lib/types";
+import { MapIcon, Pin } from "./icons";
 import type { ProfileLookup } from "./calendar-app";
 import type { Occurrence } from "@/lib/recurrence";
 import { Sheet } from "./sheet";
@@ -16,6 +17,7 @@ type Form = {
   endDate: string;
   endTime: string;
   location: string;
+  locationUrl: string;
   note: string;
   repeat: "" | "weekly" | "yearly"; // "" = 不重複
   repeatUntil: string; // "" = 一直重複
@@ -35,6 +37,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
       endDate: dateKey(e),
       endTime: event.all_day ? "10:00" : timeKey(e),
       location: event.location ?? "",
+      locationUrl: event.location_url ?? "",
       note: event.note ?? "",
       repeat: event.repeat ?? "",
       repeatUntil: event.repeat_until ?? "",
@@ -52,6 +55,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
     endDate: dateKey(defaultDay),
     endTime: hour === 23 ? "23:59" : `${String(hour + 1).padStart(2, "0")}:00`,
     location: "",
+    locationUrl: "",
     note: "",
     repeat: "",
     repeatUntil: "",
@@ -59,7 +63,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
   };
 }
 
-export function EventSheet({ event: picked, series, defaultDay, profileOf, onSave, onDelete, onSkip, onClose }: {
+export function EventSheet({ event: picked, series, defaultDay, profileOf, onSave, onDelete, onSkip, loadPlaces, onClose }: {
   event: Occurrence | null;
   series?: CalEvent; // 點的是每週重複的其中一次時，它的本體
   defaultDay: Date;
@@ -67,8 +71,17 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
   onSave: (draft: EventDraft) => Promise<string | null>;
   onDelete: (id: string) => Promise<string | null>;
   onSkip: (id: string, date: string) => Promise<string | null>;
+  loadPlaces: () => Promise<Place[]>;
   onClose: () => void;
 }) {
+  const [places, setPlaces] = useState<Place[]>([]);
+  useEffect(() => {
+    let alive = true;
+    loadPlaces().then((p) => alive && setPlaces(p));
+    return () => {
+      alive = false;
+    };
+  }, [loadPlaces]);
   // 每週重複的行程：改的、刪的都是整個系列（本體），「只刪這一次」另外處理
   const event = series ?? picked;
   const once = picked?.occurrenceDate;
@@ -104,6 +117,8 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
     }
     if (end < start) return "結束不能比開始早";
     if (form.repeat && form.repeatUntil && form.repeatUntil < form.startDate) return "重複的最後一天不能比開始早";
+    const url = form.locationUrl.trim();
+    if (url && !/^https?:\/\/\S+$/.test(url)) return "地圖連結要是網址（https:// 開頭）";
     return {
       id: event?.id,
       title,
@@ -111,6 +126,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
       start_at: start.toISOString(),
       end_at: end.toISOString(),
       location: form.location.trim() || null,
+      location_url: form.location.trim() && url ? url : null,
       note: form.note.trim() || null,
       repeat: form.repeat || null,
       repeat_until: form.repeat && form.repeatUntil ? form.repeatUntil : null,
@@ -257,12 +273,12 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
           )}
         </div>
 
-        <input
+        <LocationField
           value={form.location}
-          onChange={(e) => set("location", e.target.value)}
-          placeholder="地點"
-          maxLength={200}
-          className="h-12 rounded-2xl bg-card px-3.5 shadow-soft outline-none focus:ring-2 focus:ring-accent/50"
+          url={form.locationUrl}
+          places={places}
+          onChange={(location, locationUrl) => setForm((f) => ({ ...f, location, locationUrl: locationUrl ?? f.locationUrl }))}
+          onUrl={(v) => set("locationUrl", v)}
         />
         <textarea
           value={form.note}
@@ -385,5 +401,83 @@ function PickerField({ type, value, display, onChange, className = "" }: {
         className="absolute inset-0 size-full cursor-pointer opacity-0"
       />
     </label>
+  );
+}
+
+/**
+ * 地點：打字時下面列出用過的地點（常用的在前面），點一下就填好（連同之前貼過的地圖連結）。
+ * 下面一欄可以貼 Google 地圖的連結；沒貼的話，地圖按鈕會用地點名稱去 Google 地圖搜尋
+ */
+function LocationField({ value, url, places, onChange, onUrl }: {
+  value: string;
+  url: string;
+  places: Place[];
+  onChange: (location: string, url?: string) => void;
+  onUrl: (url: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const q = value.trim().toLowerCase();
+  const matches = places.filter((p) => p.name !== value.trim() && (!q || p.name.toLowerCase().includes(q))).slice(0, 5);
+
+  return (
+    <div className="rounded-2xl bg-card shadow-soft">
+      <input
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        // 晚一點才關，點建議的地點時才點得到
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        placeholder="地點"
+        maxLength={200}
+        autoComplete="off"
+        className="h-12 w-full rounded-2xl bg-transparent px-3.5 outline-none"
+      />
+      {open && matches.length > 0 && (
+        <ul className="border-t border-line/70 py-1" aria-label="用過的地點">
+          {matches.map((p) => (
+            <li key={p.name}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(p.name, p.url ?? "");
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left active:bg-paper"
+              >
+                <Pin className="shrink-0 text-ink-soft" />
+                <span className="min-w-0 flex-1 truncate text-[15px]">{p.name}</span>
+                {p.url && <MapIcon className="shrink-0 text-accent" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {value.trim() && (
+        <div className="flex items-center gap-2 border-t border-line/70 pr-2 pl-3.5">
+          <MapIcon className="shrink-0 text-ink-soft" />
+          <input
+            type="url"
+            inputMode="url"
+            value={url}
+            onChange={(e) => onUrl(e.target.value)}
+            placeholder="貼上 Google 地圖連結（可不填）"
+            maxLength={500}
+            autoComplete="off"
+            className="h-11 min-w-0 flex-1 bg-transparent outline-none placeholder:text-[14px]"
+          />
+          <a
+            href={mapUrl(value.trim(), url.trim())}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 rounded-full bg-accent-soft px-3 py-1.5 font-round text-[13px] text-accent"
+          >
+            開地圖
+          </a>
+        </div>
+      )}
+    </div>
   );
 }

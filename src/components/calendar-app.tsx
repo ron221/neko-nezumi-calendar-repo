@@ -225,6 +225,7 @@ export function CalendarApp() {
           onSave={data.save}
           onDelete={data.remove}
           onSkip={data.skipOnce}
+          loadPlaces={data.loadPlaces}
           series={editing !== "new" && editing.seriesId ? data.events.find((e) => e.id === editing.seriesId) : undefined}
           onClose={() => setEditing(null)}
         />
