@@ -20,7 +20,7 @@ export type Paint = {
 export function usePaint() {
   const profiles = use(ProfilesContext);
   return (e: CalEvent): Paint => {
-    const owner = profiles.find((p) => p.id === e.created_by);
+    const owner = profiles.find((p) => p.id === (e.owner_id ?? e.created_by));
     if (e.together) {
       const neko = profiles.find((p) => p.role === "neko");
       const nezumi = profiles.find((p) => p.role === "nezumi");

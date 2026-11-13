@@ -26,7 +26,8 @@ export type CalEvent = {
   location: string | null;
   location_url?: string | null; // 地點的 Google 地圖連結
   note: string | null;
-  created_by: string;
+  created_by: string; // 誰新增的
+  owner_id?: string | null; // 是誰的行程；null = 新增的人（together 時不看這個）
   created_at: string;
   updated_at: string;
   source?: string | null; // "tup-shift" = 從鼠的班表自動匯入；自己新增的是 null
@@ -52,6 +53,7 @@ export type EventDraft = {
   repeat: "weekly" | "yearly" | null;
   repeat_until: string | null;
   together: boolean;
+  owner_id: string | null;
 };
 
 /** 用過的地點（新增行程時的建議清單） */

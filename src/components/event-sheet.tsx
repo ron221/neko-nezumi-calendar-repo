@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { WEEKDAYS, addDays, dateKey, fromKeys, timeKey } from "@/lib/dates";
-import { ROLE_EMOJI, isShift, mapUrl, type CalEvent, type EventDraft, type Place } from "@/lib/types";
+import { ROLE_EMOJI, ROLE_NAME, isShift, mapUrl, type CalEvent, type EventDraft, type Place, type Profile, type Role } from "@/lib/types";
+import { tint } from "@/lib/color";
 import { MapIcon, Pin } from "./icons";
 import type { ProfileLookup } from "./calendar-app";
 import type { Occurrence } from "@/lib/recurrence";
@@ -21,10 +22,10 @@ type Form = {
   note: string;
   repeat: "" | "weekly" | "yearly"; // "" = 不重複
   repeatUntil: string; // "" = 一直重複
-  together: boolean;
+  who: Role | "together"; // 是誰的行程
 };
 
-function initialForm(event: CalEvent | null, defaultDay: Date): Form {
+function initialForm(event: CalEvent | null, defaultDay: Date, whoOf: (e: CalEvent) => Form["who"], myRole: Role): Form {
   if (event) {
     const s = new Date(event.start_at);
     let e = new Date(event.end_at);
@@ -41,7 +42,7 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
       note: event.note ?? "",
       repeat: event.repeat ?? "",
       repeatUntil: event.repeat_until ?? "",
-      together: event.together ?? false,
+      who: whoOf(event),
     };
   }
   // 新的行程：選的那天、下一個整點開始、一小時
@@ -59,14 +60,16 @@ function initialForm(event: CalEvent | null, defaultDay: Date): Form {
     note: "",
     repeat: "",
     repeatUntil: "",
-    together: false,
+    who: myRole, // 預設是自己的
   };
 }
 
-export function EventSheet({ event: picked, series, defaultDay, profileOf, onSave, onDelete, onSkip, loadPlaces, onClose }: {
+export function EventSheet({ event: picked, series, defaultDay, profiles, me, profileOf, onSave, onDelete, onSkip, loadPlaces, onClose }: {
   event: Occurrence | null;
   series?: CalEvent; // 點的是每週重複的其中一次時，它的本體
   defaultDay: Date;
+  profiles: Profile[];
+  me: Profile | null;
   profileOf: ProfileLookup;
   onSave: (draft: EventDraft) => Promise<string | null>;
   onDelete: (id: string) => Promise<string | null>;
@@ -85,7 +88,9 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
   // 每週重複的行程：改的、刪的都是整個系列（本體），「只刪這一次」另外處理
   const event = series ?? picked;
   const once = picked?.occurrenceDate;
-  const [form, setForm] = useState(() => initialForm(event, defaultDay));
+  const byRole = (r: Role) => profiles.find((p) => p.role === r);
+  const whoOf = (e: CalEvent): Form["who"] => (e.together ? "together" : (profileOf(e.owner_id ?? e.created_by)?.role ?? "neko"));
+  const [form, setForm] = useState(() => initialForm(event, defaultDay, whoOf, me?.role ?? "neko"));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -130,7 +135,8 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
       note: form.note.trim() || null,
       repeat: form.repeat || null,
       repeat_until: form.repeat && form.repeatUntil ? form.repeatUntil : null,
-      together: form.together,
+      together: form.who === "together",
+      owner_id: form.who === "together" ? null : (byRole(form.who)?.id ?? null),
     };
   };
 
@@ -163,7 +169,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
     else onClose();
   };
 
-  const owner = event ? profileOf(event.created_by) : undefined;
+  const creator = event ? profileOf(event.created_by) : undefined;
 
   return (
     <Sheet title={event ? "編輯行程" : "新增行程"} onClose={onClose}>
@@ -198,10 +204,37 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
           className="h-12 rounded-2xl bg-card px-3.5 text-[17px] font-medium shadow-soft outline-none focus:ring-2 focus:ring-accent/50"
         />
 
-        <label className="flex h-[52px] items-center justify-between rounded-2xl bg-card px-3.5 shadow-soft">
-          <span>{TOGETHER_EMOJI} 兩人一起</span>
-          <Switch checked={form.together} onChange={(v) => set("together", v)} />
-        </label>
+        <div className="flex h-[52px] items-center gap-2 rounded-2xl bg-card px-3.5 shadow-soft">
+          <span className="shrink-0">誰的</span>
+          <div className="ml-auto flex rounded-full bg-line/55 p-[3px]" role="radiogroup" aria-label="是誰的行程">
+            {(["neko", "nezumi", "together"] as const).map((w) => {
+              const on = form.who === w;
+              const color = w === "together" ? null : byRole(w)?.color;
+              return (
+                <button
+                  key={w}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => set("who", w)}
+                  className={`h-8 rounded-full px-2.5 text-[14px] whitespace-nowrap ${on ? "text-ink shadow-soft" : "text-ink-soft"}`}
+                  style={
+                    on
+                      ? {
+                          background:
+                            w === "together"
+                              ? `linear-gradient(90deg, ${tint(byRole("neko")?.color ?? "#F2994A", 0.3)}, ${tint(byRole("nezumi")?.color ?? "#6C9BD2", 0.3)})`
+                              : tint(color ?? "#cccccc", 0.3),
+                        }
+                      : undefined
+                  }
+                >
+                  {w === "together" ? `${TOGETHER_EMOJI} 一起` : `${ROLE_EMOJI[w]} ${ROLE_NAME[w]}`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="rounded-2xl bg-card shadow-soft">
           <label className="flex h-[52px] items-center justify-between px-3.5">
@@ -308,8 +341,7 @@ export function EventSheet({ event: picked, series, defaultDay, profileOf, onSav
         {event && (
           <>
             <p className="text-center text-xs text-ink-soft">
-              {event.together ? `${TOGETHER_EMOJI} 兩人一起・` : ""}
-              {owner ? `${ROLE_EMOJI[owner.role]} ${owner.name}建立的` : ""}
+              {creator ? `${ROLE_EMOJI[creator.role]} ${creator.name}新增的` : ""}
               ・最後修改 {new Date(event.updated_at).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
             </p>
             {once && (

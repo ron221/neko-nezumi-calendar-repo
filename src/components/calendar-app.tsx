@@ -226,6 +226,8 @@ export function CalendarApp() {
         <EventSheet
           event={editing === "new" ? null : editing}
           defaultDay={selected}
+          profiles={data.profiles}
+          me={data.me}
           profileOf={profileOf}
           onSave={data.save}
           onDelete={data.remove}
